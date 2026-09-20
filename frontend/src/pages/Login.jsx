@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {ToastContainer} from 'react-toastify';
 import './Login.css'
-import { handleError, handleSuccess } from '../utils';
+import { handleError, handleSuccess, API_URL } from '../utils';
 function Login() {
 
   const [loginInfo,setLoginInfo]=useState({
@@ -24,7 +24,7 @@ const handleLogin =async (e)=>{
     return handleError('All fields required')
   }
   try {
-    const url="http://localhost:8080/auth/login";
+    const url = `${API_URL}/auth/login`;
     const response = await fetch(url,{
       method:"POST",
       headers:{
