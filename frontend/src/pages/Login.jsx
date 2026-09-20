@@ -31,7 +31,13 @@ const handleLogin =async (e)=>{
         'Content-Type':'application/json'
       },
       body:JSON.stringify(loginInfo)
-    })
+    });
+
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      return handleError(`Backend unavailable or returned invalid response (${response.status})`);
+    }
+
     const result = await response.json();
     const {success,message,jwtToken,name,error}=result;
     if(success){

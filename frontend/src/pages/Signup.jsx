@@ -32,7 +32,13 @@ const handleSignup =async (e)=>{
         'Content-Type':'application/json'
       },
       body:JSON.stringify(signupInfo)
-    })
+    });
+
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      return handleError(`Backend unavailable or returned invalid response (${response.status})`);
+    }
+
     const result = await response.json();
     const {success,message,error}=result;
     if(success){
