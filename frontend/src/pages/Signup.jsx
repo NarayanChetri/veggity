@@ -36,7 +36,7 @@ const handleSignup =async (e)=>{
 
     const contentType = response.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
-      return handleError(`Backend unavailable or returned invalid response (${response.status})`);
+      return handleError(`Backend returned 404 for: ${url}`);
     }
 
     const result = await response.json();
