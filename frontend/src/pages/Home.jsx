@@ -25,6 +25,7 @@ return (
   <h3>welcome</h3>
 <h1>{loggedInUser}</h1>
 <button onClick={handleLogout}>Logout</button>
+<button className="logout-btn" onClick={handleLogout}>Logout</button>
 <ToastContainer/>
 </div>
 
