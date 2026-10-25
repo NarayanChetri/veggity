@@ -29,9 +29,15 @@ function AccountDetailsModal({ isOpen, onClose, userName, onOpenOrders }) {
             fetch(`${API_URL}/auth/profile`, {
                 headers: { Authorization: token }
             })
-                .then((res) => res.json())
+                .then(async (res) => {
+                    const contentType = res.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        return null;
+                    }
+                    return res.json();
+                })
                 .then((data) => {
-                    if (data.success && data.user) {
+                    if (data && data.success && data.user) {
                         setProfile((prev) => ({
                             ...prev,
                             name: data.user.name || prev.name,

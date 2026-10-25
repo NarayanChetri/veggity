@@ -89,6 +89,11 @@ function CartDrawer() {
                 body: JSON.stringify(orderPayload)
             });
 
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                return handleError(`Backend at ${API_URL} returned ${response.status}. Please check backend connection.`);
+            }
+
             const data = await response.json();
 
             if (data.success) {

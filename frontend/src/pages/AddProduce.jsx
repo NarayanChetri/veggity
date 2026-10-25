@@ -152,6 +152,11 @@ function AddProduce() {
                 body: JSON.stringify(finalPayload)
             });
 
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                return handleError(`Backend at ${API_URL} returned ${response.status}. Please ensure backend is running.`);
+            }
+
             const result = await response.json();
 
             if (result.success) {

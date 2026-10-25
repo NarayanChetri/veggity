@@ -1,0 +1,21 @@
+{
+  "name": "veggity-root",
+  "version": "1.0.0",
+  "description": "Hyperlocal Fresh Garden Produce Marketplace",
+  "main": "backend/index.js",
+  "scripts": {
+    "start": "node backend/index.js",
+    "build": "npm --prefix backend install",
+    "seed": "npm --prefix backend run seed"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "body-parser": "^2.3.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "joi": "^18.2.9",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.10.1"
+  }
+}

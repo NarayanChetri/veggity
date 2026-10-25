@@ -19,7 +19,13 @@ function MyOrdersModal({ isOpen, onClose }) {
         fetch(`${API_URL}/orders/my-orders`, {
             headers: { Authorization: token }
         })
-            .then((res) => res.json())
+            .then(async (res) => {
+                const contentType = res.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error(`Server returned HTTP ${res.status}`);
+                }
+                return res.json();
+            })
             .then((data) => {
                 if (data.success) {
                     setOrders(data.orders || []);
@@ -29,7 +35,7 @@ function MyOrdersModal({ isOpen, onClose }) {
             })
             .catch((err) => {
                 console.error(err);
-                handleError('Could not load orders from server');
+                handleError(`Could not load orders: ${err.message}`);
             })
             .finally(() => {
                 setLoading(false);

@@ -96,6 +96,20 @@ function Home() {
             }
 
             const response = await fetch(url);
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                console.warn(`Non-JSON response from ${url} (HTTP ${response.status}):`, text.slice(0, 150));
+                if (response.status === 404) {
+                    handleError(`Backend at ${API_URL} returned 404. Latest backend code needs to be deployed on Render.`);
+                } else if (response.status >= 500) {
+                    handleError(`Backend is spinning up (HTTP ${response.status}). Free tier takes ~30s on first load.`);
+                } else {
+                    handleError(`Backend returned invalid response (${response.status})`);
+                }
+                return;
+            }
+
             const data = await response.json();
 
             if (data.success) {
@@ -105,7 +119,7 @@ function Home() {
             }
         } catch (err) {
             console.error('Fetch error:', err);
-            handleError('Could not connect to backend server');
+            handleError(`Cannot connect to backend at ${API_URL}. If on mobile, ensure port 8080 is forwarded or on same Wi-Fi.`);
         } finally {
             setLoading(false);
         }

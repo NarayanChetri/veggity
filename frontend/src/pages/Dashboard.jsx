@@ -32,35 +32,36 @@ function Dashboard() {
     const fetchDashboardData = async (token) => {
         setLoading(true);
         try {
+            // Safe JSON fetch helper
+            const safeFetchJson = async (url) => {
+                const res = await fetch(url, { headers: { Authorization: token } });
+                const contentType = res.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error(`Server returned HTTP ${res.status}`);
+                }
+                return res.json();
+            };
+
             // 1. Fetch Orders received for this grower
-            const ordersRes = await fetch(`${API_URL}/orders/seller-orders`, {
-                headers: { Authorization: token }
-            });
-            const ordersData = await ordersRes.json();
+            const ordersData = await safeFetchJson(`${API_URL}/orders/seller-orders`);
             if (ordersData.success) {
                 setOrders(ordersData.orders || []);
             }
 
             // 2. Fetch Orders placed by this user as a buyer
-            const buyerOrdersRes = await fetch(`${API_URL}/orders/my-orders`, {
-                headers: { Authorization: token }
-            });
-            const buyerOrdersData = await buyerOrdersRes.json();
+            const buyerOrdersData = await safeFetchJson(`${API_URL}/orders/my-orders`);
             if (buyerOrdersData.success) {
                 setBuyerOrders(buyerOrdersData.orders || []);
             }
 
             // 3. Fetch produce listings created by this grower
-            const listingsRes = await fetch(`${API_URL}/orders/my-listings`, {
-                headers: { Authorization: token }
-            });
-            const listingsData = await listingsRes.json();
+            const listingsData = await safeFetchJson(`${API_URL}/orders/my-listings`);
             if (listingsData.success) {
                 setListings(listingsData.listings || []);
             }
         } catch (err) {
             console.error('Dashboard data fetch error:', err);
-            handleError('Could not load dashboard data from server');
+            handleError(`Could not load dashboard data from ${API_URL}`);
         } finally {
             setLoading(false);
         }

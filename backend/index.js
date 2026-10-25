@@ -25,6 +25,6 @@ app.use('/auth', AuthRouter);
 app.use('/products', ProductRouter);
 app.use('/orders', OrderRouter);
 
-app.listen(PORT, () => {
-    console.log("Server is running on port", PORT);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server is running on port ${PORT} (listening on 0.0.0.0 for LAN/mobile access)`);
 });
