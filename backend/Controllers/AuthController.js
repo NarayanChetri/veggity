@@ -20,7 +20,7 @@ const signup = async (req,res)=>{
     }
     catch(err) {
         console.log(err);
- res.status(500)
+        res.status(500)
             .json({
                 message:"internal server error ",success:false
             })
@@ -46,8 +46,7 @@ const login = async (req,res)=>{
         const jwtToken=jwt.sign({email:user.email,_id:user._id},
             process.env.JWT_SECRET,
             {expiresIn:'24h'}
-
-        )
+        );
 
         res.status(201)
             .json({
@@ -59,15 +58,36 @@ const login = async (req,res)=>{
     }
     catch(err) {
         console.log(err);
- res.status(500)
+        res.status(500)
             .json({
                 message:"internal server error ",success:false
             })
     }
 }
 
+const getProfile = async (req, res) => {
+    try {
+        const user = await UserModel.findById(req.user._id).select('-password');
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        res.status(200).json({
+            success: true,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: 'Verified Local Neighbor & Grower'
+            }
+        });
+    } catch (err) {
+        console.error('getProfile error:', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch user profile' });
+    }
+};
 
-module.exports={
+module.exports = {
     signup,
-    login
-}
+    login,
+    getProfile
+};

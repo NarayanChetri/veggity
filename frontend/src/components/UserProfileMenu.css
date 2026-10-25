@@ -1,0 +1,237 @@
+.user-profile-menu-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+/* 1. Navbar Profile Pill Button */
+.user-profile-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f1f5f9;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 30px;
+    padding: 4px 12px 4px 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    touch-action: manipulation;
+}
+
+.user-profile-btn:hover,
+.user-profile-btn.active {
+    background: #ecfdf5;
+    border-color: #10b981;
+}
+
+.profile-btn-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #047857;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(4, 120, 87, 0.3);
+}
+
+.profile-btn-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e293b;
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.profile-btn-chevron {
+    font-size: 12px;
+    color: #64748b;
+    transition: transform 0.2s ease;
+    display: inline-block;
+}
+
+.profile-btn-chevron.chevron-up {
+    transform: rotate(180deg);
+}
+
+/* 2. Dropdown Card */
+.profile-dropdown-card {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 270px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    z-index: 1000;
+    overflow: hidden;
+    animation: fadeInDown 0.15s ease-out;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-user-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+}
+
+.dropdown-avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #047857;
+    color: #ffffff;
+    font-size: 17px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(4, 120, 87, 0.25);
+    flex-shrink: 0;
+}
+
+.dropdown-user-text {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.dropdown-greeting {
+    font-size: 14px;
+    color: #064e3b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dropdown-greeting strong {
+    font-weight: 800;
+}
+
+.dropdown-badge {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #047857;
+    margin-top: 2px;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: #f1f5f9;
+}
+
+/* 3. Menu Items List */
+.dropdown-menu-list {
+    padding: 6px 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.dropdown-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    box-sizing: border-box;
+}
+
+.dropdown-menu-item:hover {
+    background: #f8fafc;
+}
+
+.dropdown-item-icon {
+    font-size: 18px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.dropdown-item-content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.dropdown-item-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.2;
+}
+
+.dropdown-item-desc {
+    font-size: 10.5px;
+    color: #64748b;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 4. Logout Row */
+.dropdown-logout-row {
+    padding: 8px 12px;
+    background: #fafafa;
+}
+
+.btn-dropdown-logout {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    touch-action: manipulation;
+}
+
+.btn-dropdown-logout:hover {
+    background: #fee2e2;
+}
+
+.logout-icon {
+    font-size: 14px;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+    .profile-dropdown-card {
+        right: 0;
+        width: 250px;
+    }
+
+    .profile-btn-name {
+        max-width: 65px;
+    }
+}
+

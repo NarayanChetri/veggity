@@ -1,0 +1,402 @@
+.cart-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 2000;
+    display: flex;
+    justify-content: flex-end;
+    animation: fadeIn 0.2s ease;
+    backdrop-filter: blur(2px);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.cart-drawer {
+    width: 100%;
+    max-width: 440px;
+    height: 100%;
+    background: #ffffff;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.18);
+    display: flex;
+    flex-direction: column;
+    animation: slideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+
+.cart-header {
+    padding: 16px 18px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    flex-shrink: 0;
+}
+
+.cart-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cart-title-row h3 {
+    font-size: 17px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+}
+
+.cart-badge {
+    background: #ecfdf5;
+    color: #047857;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 12px;
+    border: 1px solid #a7f3d0;
+}
+
+.btn-close-cart {
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #64748b;
+    padding: 6px;
+    border-radius: 8px;
+    line-height: 1;
+    touch-action: manipulation;
+}
+
+.btn-close-cart:hover,
+.btn-close-cart:active {
+    color: #0f172a;
+    background: #f1f5f9;
+}
+
+/* Empty State */
+.cart-empty-state {
+    padding: 50px 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+}
+
+.cart-empty-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.cart-empty-state h4 {
+    font-size: 18px;
+    font-weight: 800;
+    color: #1e293b;
+    margin-bottom: 6px;
+}
+
+.cart-empty-state p {
+    font-size: 13.5px;
+    color: #64748b;
+    line-height: 1.5;
+    margin-bottom: 18px;
+    max-width: 280px;
+}
+
+.btn-browse-veggies {
+    background: #047857;
+    color: #ffffff;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+/* Cart Items & Form Scrollable Area */
+.cart-content {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 14px 16px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.cart-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.cart-item-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.cart-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+    flex: 1;
+    min-width: 0;
+}
+
+.item-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-category-unit {
+    font-size: 11.5px;
+    color: #64748b;
+}
+
+.item-grower {
+    font-size: 10.5px;
+    color: #047857;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cart-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.qty-stepper {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border: 1.5px solid #10b981;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.btn-step {
+    background: #ecfdf5;
+    color: #047857;
+    border: none;
+    font-size: 15px;
+    font-weight: 800;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.btn-step:hover:not(:disabled),
+.btn-step:active:not(:disabled) {
+    background: #a7f3d0;
+}
+
+.btn-step:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.qty-num {
+    padding: 0 6px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #047857;
+    min-width: 18px;
+    text-align: center;
+}
+
+.item-total-price {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #0f172a;
+    min-width: 40px;
+    text-align: right;
+}
+
+.btn-remove-item {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    opacity: 0.6;
+    padding: 4px;
+}
+
+/* Bill Summary */
+.bill-summary-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 14px;
+    text-align: left;
+}
+
+.bill-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: #475569;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.bill-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12.5px;
+    color: #475569;
+    margin-bottom: 5px;
+}
+
+.free-tag {
+    color: #047857;
+    font-weight: 700;
+    font-size: 11.5px;
+}
+
+.bill-divider {
+    height: 1px;
+    background: #cbd5e1;
+    margin: 6px 0;
+}
+
+.grand-total {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 0;
+}
+
+/* Checkout Form */
+.checkout-form {
+    border-top: 1.5px dashed #cbd5e1;
+    padding-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: left;
+}
+
+.checkout-title {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 2px;
+}
+
+.checkout-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.checkout-field label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #475569;
+}
+
+/* Minimum 16px font-size to prevent iOS Safari auto-zoom on focus */
+.checkout-field input,
+.checkout-field textarea {
+    padding: 10px 12px;
+    font-size: 16px; 
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    outline: none;
+    font-family: inherit;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.checkout-field input:focus,
+.checkout-field textarea:focus {
+    border-color: #10b981;
+}
+
+.payment-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.payment-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    background: #f8fafc;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    touch-action: manipulation;
+}
+
+.btn-place-order {
+    margin-top: 6px;
+    padding: 13px;
+    background: #059669;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 800;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.25);
+    touch-action: manipulation;
+}
+
+.btn-place-order:hover,
+.btn-place-order:active {
+    background: #047857;
+}
+
+.btn-place-order:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Mobile full-width bottom sheet / drawer */
+@media (max-width: 640px) {
+    .cart-drawer {
+        max-width: 100%;
+    }
+}

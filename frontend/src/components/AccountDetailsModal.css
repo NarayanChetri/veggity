@@ -1,0 +1,205 @@
+.account-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.65);
+    z-index: 3500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    animation: fadeIn 0.2s ease;
+    backdrop-filter: blur(3px);
+}
+
+.account-modal-card {
+    background: #ffffff;
+    border-radius: 18px;
+    width: 100%;
+    max-width: 480px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    border: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+}
+
+.account-modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+}
+
+.account-modal-header h3 {
+    font-size: 16px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+}
+
+.btn-close-account-modal {
+    background: #f1f5f9;
+    border: none;
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    cursor: pointer;
+    color: #64748b;
+    transition: all 0.2s;
+}
+
+.btn-close-account-modal:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.account-hero-box {
+    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+    border-bottom: 1px solid #d1fae5;
+    padding: 22px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.account-avatar-large {
+    width: 58px;
+    height: 58px;
+    background: #047857;
+    color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 900;
+    box-shadow: 0 4px 10px rgba(4, 120, 87, 0.3);
+    flex-shrink: 0;
+}
+
+.account-hero-text h4 {
+    font-size: 19px;
+    font-weight: 800;
+    color: #064e3b;
+    margin: 0 0 4px 0;
+}
+
+.account-badge-pill {
+    display: inline-block;
+    background: #d1fae5;
+    color: #047857;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 12px;
+    border: 1px solid #a7f3d0;
+}
+
+.account-details-body {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.account-info-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 10px;
+}
+
+.account-info-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.account-field-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.account-field-value {
+    font-size: 14px;
+    color: #0f172a;
+    font-weight: 700;
+    word-break: break-word;
+}
+
+.status-active-badge {
+    color: #047857;
+    font-weight: 700;
+    font-size: 13.5px;
+}
+
+.capabilities-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 2px;
+}
+
+.cap-pill {
+    background: #f1f5f9;
+    color: #334155;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 8px;
+}
+
+.account-modal-footer {
+    padding: 14px 20px;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-account-orders {
+    background: #059669;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-account-orders:hover {
+    background: #047857;
+}
+
+.btn-account-close {
+    background: #ffffff;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-account-close:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+

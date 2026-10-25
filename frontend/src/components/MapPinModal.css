@@ -1,0 +1,257 @@
+.map-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    animation: fadeIn 0.2s ease;
+    backdrop-filter: blur(2px);
+}
+
+.map-modal-card {
+    background: #ffffff;
+    border-radius: 18px;
+    width: 100%;
+    max-width: 640px;
+    height: 85vh;
+    max-height: 680px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    border: 1px solid #e2e8f0;
+}
+
+.map-modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    background: #ffffff;
+}
+
+.map-modal-header h3 {
+    font-size: 17px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 2px 0;
+}
+
+.map-modal-header p {
+    font-size: 12.5px;
+    color: #64748b;
+    margin: 0;
+}
+
+.btn-close-map {
+    background: #f1f5f9;
+    border: none;
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    color: #64748b;
+}
+
+.btn-close-map:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.map-viewport-wrapper {
+    flex: 1;
+    min-height: 320px;
+    position: relative;
+    width: 100%;
+    background: #e2e8f0;
+    overflow: hidden;
+}
+
+.leaflet-map-div {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.map-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(248, 250, 252, 0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    z-index: 999;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    pointer-events: none;
+}
+
+.map-mini-spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid #cbd5e1;
+    border-top: 3px solid #059669;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.btn-map-gps-float {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 1000;
+    background: #ffffff;
+    color: #047857;
+    border: 1.5px solid #10b981;
+    border-radius: 10px;
+    padding: 9px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.btn-map-gps-float:hover {
+    background: #ecfdf5;
+    transform: translateY(-1px);
+}
+
+.map-modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid #e2e8f0;
+    background: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.selected-pin-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+    flex: 1;
+    min-width: 0;
+}
+
+.pin-label-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+}
+
+.pin-place-text {
+    font-size: 14px;
+    color: #0f172a;
+    font-weight: 800;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pin-coords-text {
+    font-size: 11.5px;
+    color: #047857;
+    font-family: monospace;
+    font-weight: 600;
+}
+
+.map-modal-actions {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.btn-cancel-map {
+    background: #f1f5f9;
+    color: #475569;
+    border: none;
+    padding: 11px 16px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.btn-confirm-map {
+    background: #059669;
+    color: #ffffff;
+    border: none;
+    padding: 11px 18px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(5, 150, 105, 0.25);
+    transition: background 0.2s;
+}
+
+.btn-confirm-map:hover {
+    background: #047857;
+}
+
+@media (max-width: 640px) {
+    .map-modal-backdrop {
+        padding: 0;
+    }
+
+    .map-modal-card {
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    .map-modal-footer {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 14px;
+        gap: 12px;
+    }
+
+    .map-modal-actions {
+        width: 100%;
+    }
+
+    .btn-cancel-map {
+        flex: 1;
+    }
+
+    .btn-confirm-map {
+        flex: 2;
+        text-align: center;
+    }
+}
+
