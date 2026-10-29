@@ -54,6 +54,7 @@ const CATEGORY_RULES = {
 function AddProduce() {
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
+    const cameraInputRef = useRef(null);
 
     // 1. Verify user is authenticated
     useEffect(() => {
@@ -102,7 +103,6 @@ function AddProduce() {
     const [uploadError, setUploadError] = useState('');
     const [isCustomUploaded, setIsCustomUploaded] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
-    const [showManualUrl, setShowManualUrl] = useState(false);
 
     // Dynamic shelf life days list based on current selected category
     const currentCategoryRule = CATEGORY_RULES[formData.category] || CATEGORY_RULES['Leafy Vegetables'];
@@ -138,19 +138,20 @@ function AddProduce() {
         }));
     };
 
-    // Image Upload Handler
+    // Image Upload Handler (Direct from device)
     const handleImageFile = async (file) => {
         if (!file) return;
 
-        // Validate MIME type
-        if (!file.type.startsWith('image/')) {
+        // Validate MIME type or file extension (supports smartphone camera shots, HEIC, JPEG, PNG, WEBP)
+        const isImage = file.type?.startsWith('image/') || /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file.name);
+        if (!isImage) {
             handleError('Please select a valid image file (JPEG, PNG, WEBP, or GIF).');
             return;
         }
 
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            handleError('Image is too large. Maximum file size is 5MB.');
+        // Validate file size (up to 10MB to comfortably support modern high-res phone cameras)
+        if (file.size > 10 * 1024 * 1024) {
+            handleError('Image is too large. Maximum file size is 10MB.');
             return;
         }
 
@@ -164,7 +165,7 @@ function AddProduce() {
         setUploadError('');
         setIsUploadingImage(true);
 
-        // Show immediate local preview while uploading to Cloudinary
+        // Show immediate local preview from device file while uploading to Cloudinary
         const localPreview = URL.createObjectURL(file);
         setFormData(prev => ({ ...prev, imageUrl: localPreview }));
 
@@ -185,12 +186,12 @@ function AddProduce() {
             if (response.ok && result.success) {
                 setFormData(prev => ({ ...prev, imageUrl: result.imageUrl }));
                 setIsCustomUploaded(true);
-                handleSuccess('Produce image uploaded to Cloudinary successfully!');
+                handleSuccess('Produce photo uploaded from device to Cloudinary successfully!');
             } else {
                 // If Cloudinary keys are missing on the server
                 if (result.needsConfig) {
                     setUploadError('Cloudinary is not yet configured in backend/.env. Please configure CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.');
-                    handleError('Cloudinary credentials missing on server. See instructions below.');
+                    handleError('Cloudinary credentials missing on server.');
                 } else {
                     setUploadError(result.message || 'Image upload failed.');
                     handleError(result.message || 'Failed to upload image.');
@@ -211,6 +212,13 @@ function AddProduce() {
     };
 
     const handleFileInputChange = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            handleImageFile(file);
+        }
+    };
+
+    const handleCameraInputChange = (e) => {
         const file = e.target.files?.[0];
         if (file) {
             handleImageFile(file);
@@ -242,6 +250,9 @@ function AddProduce() {
         setUploadError('');
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
+        }
+        if (cameraInputRef.current) {
+            cameraInputRef.current.value = '';
         }
     };
 
@@ -451,23 +462,34 @@ function AddProduce() {
                         </select>
                     </div>
 
-                    {/* CLOUDINARY IMAGE UPLOAD SECTION */}
+                    {/* CLOUDINARY DIRECT DEVICE IMAGE UPLOAD SECTION */}
                     <div className="form-group image-upload-group">
                         <label className="section-label">
-                            📸 Produce Photo (Direct Cloudinary Upload)
+                            📸 Produce Photo (Direct Upload from Device)
                         </label>
                         <span className="upload-subtitle">
-                            Upload a real photo of your harvest to help neighbors see the freshness!
+                            Take a real photo of your harvest with your camera or select from your device!
                         </span>
 
-                        {/* Hidden file input */}
+                        {/* Hidden file input for file manager / gallery */}
                         <input
                             type="file"
                             id="produceImageFile"
                             ref={fileInputRef}
-                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            accept="image/*"
                             style={{ display: 'none' }}
                             onChange={handleFileInputChange}
+                        />
+
+                        {/* Hidden file input for direct smartphone camera capture */}
+                        <input
+                            type="file"
+                            id="produceCameraFile"
+                            ref={cameraInputRef}
+                            accept="image/*"
+                            capture="environment"
+                            style={{ display: 'none' }}
+                            onChange={handleCameraInputChange}
                         />
 
                         {/* Uploading Progress State */}
@@ -476,7 +498,7 @@ function AddProduce() {
                                 <div className="upload-spinner"></div>
                                 <div className="upload-progress-text">
                                     <strong>Uploading directly to Cloudinary...</strong>
-                                    <span>Optimizing and securing image CDN link</span>
+                                    <span>Processing photo and creating instant high-res CDN link</span>
                                 </div>
                             </div>
                         )}
@@ -490,23 +512,32 @@ function AddProduce() {
                                 onDragLeave={handleDragLeave}
                                 onClick={() => fileInputRef.current?.click()}
                             >
-                                <div className="drop-icon">☁️ 📷</div>
+                                <div className="drop-icon">📸 🌿</div>
                                 <div className="drop-main-text">
-                                    <strong>Tap to take a photo or select an image</strong>
+                                    <strong>Upload Photo Directly from Device</strong>
                                 </div>
                                 <div className="drop-sub-text">
-                                    or drag & drop here (JPG, PNG, WEBP, GIF up to 5MB)
+                                    Snap with camera or select from gallery / files (or drag & drop here)
                                 </div>
-                                <button
-                                    type="button"
-                                    className="btn-select-file"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        fileInputRef.current?.click();
-                                    }}
-                                >
-                                    Browse Files / Camera
-                                </button>
+                                <div className="upload-btn-group" onClick={(e) => e.stopPropagation()}>
+                                    <button
+                                        type="button"
+                                        className="btn-upload-action btn-camera"
+                                        onClick={() => cameraInputRef.current?.click()}
+                                    >
+                                        📷 Take Photo (Camera)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn-upload-action btn-browse"
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        📁 Choose from Device
+                                    </button>
+                                </div>
+                                <small className="drop-footnote">
+                                    Stored on Cloudinary CDN • Supports JPG, PNG, WEBP, HEIC up to 10MB
+                                </small>
                             </div>
                         )}
 
@@ -528,7 +559,7 @@ function AddProduce() {
                                         className="preview-img"
                                     />
                                     <span className="preview-badge cloudinary-badge">
-                                        {isCustomUploaded ? '☁️ Uploaded to Cloudinary' : '🔗 Image URL Active'}
+                                        ☁️ Uploaded to Cloudinary
                                     </span>
                                 </div>
                                 <div className="preview-actions">
@@ -560,40 +591,10 @@ function AddProduce() {
                                         className="category-mini-thumb"
                                     />
                                     <div className="category-preview-desc">
-                                        <span className="default-tag">Default Category Photo</span>
-                                        <small>Used automatically if no custom photo is uploaded.</small>
+                                        <span className="default-tag">Optional Default Category Photo</span>
+                                        <small>Used automatically if you prefer not to upload your own photo.</small>
                                     </div>
                                 </div>
-                            </div>
-                        )}
-
-                        {/* Toggle Manual Image URL */}
-                        <div className="manual-url-toggle-wrap">
-                            <button
-                                type="button"
-                                className="btn-toggle-manual"
-                                onClick={() => setShowManualUrl(!showManualUrl)}
-                            >
-                                {showManualUrl ? '▲ Hide URL input' : '▼ Or enter image URL manually'}
-                            </button>
-                        </div>
-
-                        {showManualUrl && (
-                            <div className="manual-url-input-box">
-                                <input
-                                    type="url"
-                                    id="imageUrl"
-                                    name="imageUrl"
-                                    placeholder="https://example.com/produce.jpg"
-                                    value={formData.imageUrl}
-                                    onChange={(e) => {
-                                        setIsCustomUploaded(false);
-                                        handleChange(e);
-                                    }}
-                                />
-                                <small className="hint-text">
-                                    Direct image links from external CDNs or Cloudinary are supported.
-                                </small>
                             </div>
                         )}
                     </div>

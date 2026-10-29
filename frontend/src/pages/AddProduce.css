@@ -230,22 +230,58 @@
     opacity: 0.85;
 }
 
-.btn-select-file {
-    margin-top: 6px;
-    background: #ffffff;
-    border: 1.5px solid #10b981;
-    color: #047857;
-    font-weight: 700;
-    font-size: 12.5px;
-    padding: 7px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
+.upload-btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 8px;
+    margin-bottom: 4px;
 }
 
-.btn-select-file:hover {
-    background: #10b981;
+.btn-upload-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 9px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    outline: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.btn-camera {
+    background: #059669;
     color: #ffffff;
+}
+
+.btn-camera:hover {
+    background: #047857;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(5, 150, 105, 0.25);
+}
+
+.btn-browse {
+    background: #ffffff;
+    color: #065f46;
+    border: 1.5px solid #10b981;
+}
+
+.btn-browse:hover {
+    background: #ecfdf5;
+    border-color: #059669;
+    transform: translateY(-1px);
+}
+
+.drop-footnote {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 4px;
 }
 
 /* Upload Progress Indicator */

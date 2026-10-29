@@ -1,20 +1,31 @@
 const path = require('path');
-// Ensure environment variables are loaded even if imported early
-if (!process.env.CLOUDINARY_CLOUD_NAME) {
-    require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
-}
-
 const cloudinary = require('cloudinary').v2;
+
+const cleanEnv = (val) => {
+    if (!val) return '';
+    return String(val).trim().replace(/^["']|["']$/g, '');
+};
 
 /**
  * Ensures Cloudinary is configured with latest environment variables
  */
 const configureCloudinary = () => {
+    // Reload dotenv with override in case .env was edited or updated
+    try {
+        require('dotenv').config({ path: path.join(__dirname, '..', '.env'), override: true });
+    } catch (_) {}
+
+    const cloud_name = cleanEnv(process.env.CLOUDINARY_CLOUD_NAME);
+    const api_key = cleanEnv(process.env.CLOUDINARY_API_KEY);
+    const api_secret = cleanEnv(process.env.CLOUDINARY_API_SECRET);
+
     cloudinary.config({
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET
+        cloud_name,
+        api_key,
+        api_secret
     });
+
+    return { cloud_name, api_key, api_secret };
 };
 
 // Initial config
@@ -24,11 +35,8 @@ configureCloudinary();
  * Checks whether Cloudinary credentials have been provided in the environment
  */
 const isCloudinaryConfigured = () => {
-    return Boolean(
-        process.env.CLOUDINARY_CLOUD_NAME &&
-        process.env.CLOUDINARY_API_KEY &&
-        process.env.CLOUDINARY_API_SECRET
-    );
+    const { cloud_name, api_key, api_secret } = configureCloudinary();
+    return Boolean(cloud_name && api_key && api_secret);
 };
 
 /**

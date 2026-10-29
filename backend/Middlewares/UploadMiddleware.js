@@ -3,29 +3,22 @@ const multer = require('multer');
 // Store files in memory buffer for streaming to Cloudinary
 const storage = multer.memoryStorage();
 
-// Validate file type (only allow common image formats)
+// Validate file type (allow common image formats & camera snapshots)
 const fileFilter = (req, file, cb) => {
-    const allowedMimeTypes = [
-        'image/jpeg',
-        'image/jpg',
-        'image/png',
-        'image/webp',
-        'image/gif',
-        'image/heic',
-        'image/heif'
-    ];
+    const isImageMime = file.mimetype && file.mimetype.toLowerCase().startsWith('image/');
+    const hasImageExt = file.originalname && /\.(jpe?g|png|webp|gif|heic|heif|bmp|tiff?)$/i.test(file.originalname);
 
-    if (allowedMimeTypes.includes(file.mimetype.toLowerCase())) {
+    if (isImageMime || hasImageExt) {
         cb(null, true);
     } else {
-        cb(new Error('Invalid file type. Only JPEG, PNG, WEBP, and GIF images are allowed.'), false);
+        cb(new Error('Invalid file type. Please upload a valid image (JPEG, PNG, WEBP, or GIF).'), false);
     }
 };
 
 const upload = multer({
     storage,
     limits: {
-        fileSize: 5 * 1024 * 1024 // 5 MB max limit
+        fileSize: 10 * 1024 * 1024 // 10 MB max limit for modern smartphone camera photos
     },
     fileFilter
 });
@@ -40,7 +33,7 @@ const handleImageUpload = (fieldName = 'image') => {
                 if (err.code === 'LIMIT_FILE_SIZE') {
                     return res.status(400).json({
                         success: false,
-                        message: 'File size too large. Maximum allowed size is 5MB.'
+                        message: 'File size too large. Maximum allowed size is 10MB.'
                     });
                 }
                 return res.status(400).json({

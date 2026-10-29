@@ -180,19 +180,48 @@
     margin-bottom: 2px;
 }
 
-.btn-toggle-manual-url {
-    background: transparent;
-    border: none;
-    color: #059669;
-    font-size: 11.5px;
-    font-weight: 700;
-    cursor: pointer;
-    text-decoration: underline;
-    padding: 0;
+.edit-photo-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
 }
 
-.btn-toggle-manual-url:hover {
+.btn-edit-photo-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #f0fdf4;
+    border: 1.5px solid #10b981;
     color: #047857;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-edit-photo-action:hover {
+    background: #10b981;
+    color: #ffffff;
+}
+
+.btn-edit-photo-remove {
+    background: #fef2f2;
+    border: 1.5px solid #fecaca;
+    color: #dc2626;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: auto;
+}
+
+.btn-edit-photo-remove:hover {
+    background: #fee2e2;
 }
 
 .cloudinary-upload-dropzone {

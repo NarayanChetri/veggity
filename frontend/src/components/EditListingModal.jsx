@@ -15,6 +15,7 @@ const UNITS = ['kg', 'bunch', 'piece', '500g', '250g', '100g'];
 
 function EditListingModal({ isOpen, product, onClose, onUpdated }) {
     const fileInputRef = useRef(null);
+    const cameraInputRef = useRef(null);
     const [formData, setFormData] = useState({
         title: '',
         category: 'Leafy Vegetables',
@@ -33,7 +34,6 @@ function EditListingModal({ isOpen, product, onClose, onUpdated }) {
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [uploadError, setUploadError] = useState('');
     const [isDragging, setIsDragging] = useState(false);
-    const [showManualUrl, setShowManualUrl] = useState(false);
 
     useEffect(() => {
         if (product) {
@@ -69,13 +69,14 @@ function EditListingModal({ isOpen, product, onClose, onUpdated }) {
     const handleImageFile = async (file) => {
         if (!file) return;
 
-        if (!file.type.startsWith('image/')) {
+        const isImage = file.type?.startsWith('image/') || /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file.name);
+        if (!isImage) {
             handleError('Please select a valid image file (JPEG, PNG, WEBP, or GIF).');
             return;
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-            handleError('Image is too large. Maximum file size is 5MB.');
+        if (file.size > 10 * 1024 * 1024) {
+            handleError('Image is too large. Maximum file size is 10MB.');
             return;
         }
 
@@ -108,7 +109,7 @@ function EditListingModal({ isOpen, product, onClose, onUpdated }) {
 
             if (response.ok && result.success) {
                 setFormData((prev) => ({ ...prev, imageUrl: result.imageUrl }));
-                handleSuccess('Produce image uploaded to Cloudinary successfully!');
+                handleSuccess('Produce photo uploaded from device to Cloudinary successfully!');
             } else {
                 setUploadError(result.message || 'Image upload failed.');
                 handleError(result.message || 'Failed to upload image.');
@@ -123,6 +124,11 @@ function EditListingModal({ isOpen, product, onClose, onUpdated }) {
     };
 
     const handleFileSelect = (e) => {
+        const file = e.target.files?.[0];
+        if (file) handleImageFile(file);
+    };
+
+    const handleCameraSelect = (e) => {
         const file = e.target.files?.[0];
         if (file) handleImageFile(file);
     };
@@ -340,20 +346,13 @@ function EditListingModal({ isOpen, product, onClose, onUpdated }) {
                             />
                         </div>
 
-                        {/* Cloudinary Image Upload Section */}
+                        {/* Cloudinary Direct Device Image Upload Section */}
                         <div className="edit-form-group">
                             <div className="edit-photo-header">
-                                <label>Produce Photo (Cloudinary Upload)</label>
-                                <button
-                                    type="button"
-                                    className="btn-toggle-manual-url"
-                                    onClick={() => setShowManualUrl(!showManualUrl)}
-                                >
-                                    {showManualUrl ? '← Upload photo file instead' : '🔗 Enter image URL instead'}
-                                </button>
+                                <label>Produce Photo (Direct Upload from Device)</label>
                             </div>
 
-                            {/* Hidden file input for Cloudinary upload */}
+                            {/* Hidden file inputs for Cloudinary upload from device and camera */}
                             <input
                                 type="file"
                                 ref={fileInputRef}
@@ -361,63 +360,75 @@ function EditListingModal({ isOpen, product, onClose, onUpdated }) {
                                 style={{ display: 'none' }}
                                 onChange={handleFileSelect}
                             />
+                            <input
+                                type="file"
+                                ref={cameraInputRef}
+                                accept="image/*"
+                                capture="environment"
+                                style={{ display: 'none' }}
+                                onChange={handleCameraSelect}
+                            />
 
-                            {!showManualUrl ? (
-                                <div
-                                    className={`cloudinary-upload-dropzone ${isDragging ? 'dragging' : ''}`}
-                                    onDragOver={handleDragOver}
-                                    onDragLeave={handleDragLeave}
-                                    onDrop={handleDrop}
-                                    onClick={() => !isUploadingImage && fileInputRef.current?.click()}
-                                >
-                                    {isUploadingImage ? (
-                                        <div className="upload-loading-state">
-                                            <div className="upload-spinner" />
-                                            <span>Uploading produce photo to Cloudinary...</span>
-                                        </div>
-                                    ) : formData.imageUrl ? (
-                                        <div className="uploaded-photo-preview-wrap">
-                                            <img
-                                                src={formData.imageUrl}
-                                                alt="Produce preview"
-                                                className="uploaded-photo-thumb"
-                                                onError={(e) => {
-                                                    e.target.src = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300&auto=format&fit=crop&q=80';
-                                                }}
-                                            />
-                                            <div className="uploaded-photo-overlay">
-                                                <span>📸 Click or drag to replace photo via Cloudinary</span>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="dropzone-empty-state">
-                                            <span className="dropzone-icon">📷</span>
-                                            <strong>Click or drag & drop to upload photo</strong>
-                                            <small>Stored directly on Cloudinary (PNG, JPG, WEBP up to 5MB)</small>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="manual-url-input-wrap">
-                                    <input
-                                        type="url"
-                                        name="imageUrl"
-                                        value={formData.imageUrl}
-                                        onChange={handleChange}
-                                        placeholder="https://images.unsplash.com/photo-..."
-                                    />
-                                    {formData.imageUrl && (
+                            <div
+                                className={`cloudinary-upload-dropzone ${isDragging ? 'dragging' : ''}`}
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                                onClick={() => !isUploadingImage && fileInputRef.current?.click()}
+                            >
+                                {isUploadingImage ? (
+                                    <div className="upload-loading-state">
+                                        <div className="upload-spinner" />
+                                        <span>Uploading photo from device to Cloudinary...</span>
+                                    </div>
+                                ) : formData.imageUrl ? (
+                                    <div className="uploaded-photo-preview-wrap">
                                         <img
                                             src={formData.imageUrl}
-                                            alt="Preview"
-                                            className="manual-thumb-preview"
+                                            alt="Produce preview"
+                                            className="uploaded-photo-thumb"
                                             onError={(e) => {
                                                 e.target.src = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300&auto=format&fit=crop&q=80';
                                             }}
                                         />
-                                    )}
-                                </div>
-                            )}
+                                        <div className="uploaded-photo-overlay">
+                                            <span>📸 Click or drag to replace photo from device</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="dropzone-empty-state">
+                                        <span className="dropzone-icon">📸</span>
+                                        <strong>Click or drag & drop to upload photo</strong>
+                                        <small>Stored directly on Cloudinary (JPG, PNG, WEBP, HEIC up to 10MB)</small>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="edit-photo-actions" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                    type="button"
+                                    className="btn-edit-photo-action"
+                                    onClick={() => cameraInputRef.current?.click()}
+                                >
+                                    📷 Open Camera
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn-edit-photo-action"
+                                    onClick={() => fileInputRef.current?.click()}
+                                >
+                                    📁 Choose from Device
+                                </button>
+                                {formData.imageUrl && (
+                                    <button
+                                        type="button"
+                                        className="btn-edit-photo-remove"
+                                        onClick={() => setFormData((prev) => ({ ...prev, imageUrl: '' }))}
+                                    >
+                                        🗑️ Clear
+                                    </button>
+                                )}
+                            </div>
 
                             {uploadError && <p className="edit-upload-error">{uploadError}</p>}
                         </div>
