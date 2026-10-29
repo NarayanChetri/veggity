@@ -77,20 +77,17 @@ function UserProfileMenu({ userName, onLogout, onOpenAccountDetails, onOpenOrder
                             </div>
                         </button>
 
-                        <button
-                            type="button"
+                        <Link
+                            to="/orders"
                             className="dropdown-menu-item"
-                            onClick={() => {
-                                setIsOpen(false);
-                                onOpenOrders();
-                            }}
+                            onClick={() => setIsOpen(false)}
                         >
                             <span className="dropdown-item-icon">🛍️</span>
                             <div className="dropdown-item-content">
-                                <span className="dropdown-item-title">My Orders</span>
-                                <span className="dropdown-item-desc">Track purchases & delivery status</span>
+                                <span className="dropdown-item-title">My Purchases</span>
+                                <span className="dropdown-item-desc">Track vegetables you bought & rate delivery</span>
                             </div>
-                        </button>
+                        </Link>
 
                         <Link
                             to="/dashboard"
@@ -100,7 +97,7 @@ function UserProfileMenu({ userName, onLogout, onOpenAccountDetails, onOpenOrder
                             <span className="dropdown-item-icon">📊</span>
                             <div className="dropdown-item-content">
                                 <span className="dropdown-item-title">Grower Dashboard</span>
-                                <span className="dropdown-item-desc">Manage received orders & listings</span>
+                                <span className="dropdown-item-desc">Fulfill incoming customer orders & manage listings</span>
                             </div>
                         </Link>
 

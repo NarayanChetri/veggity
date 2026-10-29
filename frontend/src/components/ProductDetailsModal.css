@@ -412,6 +412,17 @@
     background: #d1fae5;
 }
 
+.modal-own-listing-notice {
+    background: #f1f5f9;
+    color: #475569;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    border: 1px dashed #cbd5e1;
+    text-align: center;
+}
+
 /* Mobile Responsiveness (< 640px) */
 @media (max-width: 640px) {
     .product-modal-backdrop {

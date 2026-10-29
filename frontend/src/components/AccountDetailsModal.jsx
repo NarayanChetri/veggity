@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API_URL } from '../utils';
+import { API_URL, handleSuccess } from '../utils';
 import './AccountDetailsModal.css';
 
 function AccountDetailsModal({ isOpen, onClose, userName, onOpenOrders }) {
@@ -10,6 +10,11 @@ function AccountDetailsModal({ isOpen, onClose, userName, onOpenOrders }) {
     });
 
     const [savedLocation, setSavedLocation] = useState('');
+    const [savedPhone, setSavedPhone] = useState('');
+    const [savedAddress, setSavedAddress] = useState('');
+    const [isEditingContact, setIsEditingContact] = useState(false);
+    const [editPhone, setEditPhone] = useState('');
+    const [editAddress, setEditAddress] = useState('');
 
     useEffect(() => {
         if (!isOpen) return;
@@ -23,7 +28,14 @@ function AccountDetailsModal({ isOpen, onClose, userName, onOpenOrders }) {
             }
         } catch (_e) {}
 
-        // Optionally fetch fresh profile from backend
+        const phone = localStorage.getItem('veggity_saved_phone') || '';
+        const address = localStorage.getItem('veggity_saved_address') || '';
+        setSavedPhone(phone);
+        setSavedAddress(address);
+        setEditPhone(phone);
+        setEditAddress(address);
+
+        // Fetch fresh profile from backend
         const token = localStorage.getItem('token');
         if (token) {
             fetch(`${API_URL}/auth/profile`, {
@@ -51,6 +63,16 @@ function AccountDetailsModal({ isOpen, onClose, userName, onOpenOrders }) {
     }, [isOpen, userName]);
 
     if (!isOpen) return null;
+
+    const handleSaveContact = (e) => {
+        e.preventDefault();
+        localStorage.setItem('veggity_saved_phone', editPhone.trim());
+        localStorage.setItem('veggity_saved_address', editAddress.trim());
+        setSavedPhone(editPhone.trim());
+        setSavedAddress(editAddress.trim());
+        setIsEditingContact(false);
+        handleSuccess('Delivery address and contact phone updated!');
+    };
 
     const initial = (profile.name || 'U').charAt(0).toUpperCase();
 
@@ -100,6 +122,70 @@ function AccountDetailsModal({ isOpen, onClose, userName, onOpenOrders }) {
                         </strong>
                     </div>
 
+                    {/* Saved Phone & Delivery Address */}
+                    <div className="account-contact-box">
+                        <div className="account-contact-header">
+                            <span className="account-field-label">📦 Saved Delivery Address & Phone</span>
+                            {!isEditingContact && (
+                                <button
+                                    type="button"
+                                    className="btn-edit-account-contact"
+                                    onClick={() => setIsEditingContact(true)}
+                                >
+                                    ✏️ Edit Details
+                                </button>
+                            )}
+                        </div>
+
+                        {!isEditingContact ? (
+                            <div className="account-contact-view">
+                                <div className="account-info-row sub-row">
+                                    <span>Phone:</span>
+                                    <strong>{savedPhone ? `📞 ${savedPhone}` : 'No phone number saved yet'}</strong>
+                                </div>
+                                <div className="account-info-row sub-row">
+                                    <span>Address:</span>
+                                    <strong>{savedAddress ? `🏠 ${savedAddress}` : 'No address saved yet'}</strong>
+                                </div>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleSaveContact} className="account-contact-form">
+                                <div className="form-mini-field">
+                                    <label>Mobile Number</label>
+                                    <input
+                                        type="tel"
+                                        placeholder="10-digit mobile number"
+                                        value={editPhone}
+                                        onChange={(e) => setEditPhone(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-mini-field">
+                                    <label>House / Society / Street Address</label>
+                                    <textarea
+                                        rows="2"
+                                        placeholder="e.g. Flat 204, Nilachal Quarters, Napaam"
+                                        value={editAddress}
+                                        onChange={(e) => setEditAddress(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-mini-actions">
+                                    <button
+                                        type="button"
+                                        className="btn-cancel-mini"
+                                        onClick={() => setIsEditingContact(false)}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="btn-save-mini">
+                                        ✓ Save Details
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+
                     <div className="account-info-row">
                         <span className="account-field-label">Account Capabilities</span>
                         <div className="capabilities-pills">
@@ -134,4 +220,3 @@ function AccountDetailsModal({ isOpen, onClose, userName, onOpenOrders }) {
 }
 
 export default AccountDetailsModal;
-

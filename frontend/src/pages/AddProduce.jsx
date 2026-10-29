@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import { API_URL, handleError, handleSuccess } from '../utils';
@@ -53,6 +53,7 @@ const CATEGORY_RULES = {
 
 function AddProduce() {
     const navigate = useNavigate();
+    const fileInputRef = useRef(null);
 
     // 1. Verify user is authenticated
     useEffect(() => {
@@ -62,6 +63,21 @@ function AddProduce() {
             navigate('/login');
         }
     }, [navigate]);
+
+    // Check Cloudinary backend configuration status
+    const [cloudinaryStatus, setCloudinaryStatus] = useState({ checked: false, isConfigured: false });
+    useEffect(() => {
+        fetch(`${API_URL}/products/cloudinary-status`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.success) {
+                    setCloudinaryStatus({ checked: true, isConfigured: Boolean(data.isConfigured) });
+                }
+            })
+            .catch(() => {
+                setCloudinaryStatus({ checked: true, isConfigured: false });
+            });
+    }, []);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -81,11 +97,18 @@ function AddProduce() {
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Image upload states
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [uploadError, setUploadError] = useState('');
+    const [isCustomUploaded, setIsCustomUploaded] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const [showManualUrl, setShowManualUrl] = useState(false);
+
     // Dynamic shelf life days list based on current selected category
     const currentCategoryRule = CATEGORY_RULES[formData.category] || CATEGORY_RULES['Leafy Vegetables'];
     const shelfLifeOptions = Array.from({ length: currentCategoryRule.maxDays }, (_, i) => i + 1);
 
-    // Handle input field changes
+    // Handle standard input field changes
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({
@@ -94,15 +117,14 @@ function AddProduce() {
         }));
     };
 
-    // When category changes, reset shelf life to category default & suggest image
+    // When category changes, reset shelf life to category default
     const handleCategoryChange = (e) => {
         const selectedCat = e.target.value;
         const rule = CATEGORY_RULES[selectedCat] || CATEGORY_RULES['Leafy Vegetables'];
         setFormData((prev) => ({
             ...prev,
             category: selectedCat,
-            shelfLifeDays: String(rule.defaultDays),
-            imageUrl: prev.imageUrl || rule.defaultImage
+            shelfLifeDays: String(rule.defaultDays)
         }));
     };
 
@@ -116,9 +138,120 @@ function AddProduce() {
         }));
     };
 
+    // Image Upload Handler
+    const handleImageFile = async (file) => {
+        if (!file) return;
+
+        // Validate MIME type
+        if (!file.type.startsWith('image/')) {
+            handleError('Please select a valid image file (JPEG, PNG, WEBP, or GIF).');
+            return;
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            handleError('Image is too large. Maximum file size is 5MB.');
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            handleError('Authentication session expired. Please log in.');
+            navigate('/login');
+            return;
+        }
+
+        setUploadError('');
+        setIsUploadingImage(true);
+
+        // Show immediate local preview while uploading to Cloudinary
+        const localPreview = URL.createObjectURL(file);
+        setFormData(prev => ({ ...prev, imageUrl: localPreview }));
+
+        const uploadData = new FormData();
+        uploadData.append('image', file);
+
+        try {
+            const response = await fetch(`${API_URL}/products/upload-image`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': token
+                },
+                body: uploadData
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                setFormData(prev => ({ ...prev, imageUrl: result.imageUrl }));
+                setIsCustomUploaded(true);
+                handleSuccess('Produce image uploaded to Cloudinary successfully!');
+            } else {
+                // If Cloudinary keys are missing on the server
+                if (result.needsConfig) {
+                    setUploadError('Cloudinary is not yet configured in backend/.env. Please configure CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.');
+                    handleError('Cloudinary credentials missing on server. See instructions below.');
+                } else {
+                    setUploadError(result.message || 'Image upload failed.');
+                    handleError(result.message || 'Failed to upload image.');
+                }
+                // Clear temporary preview if upload failed
+                setFormData(prev => ({ ...prev, imageUrl: '' }));
+                setIsCustomUploaded(false);
+            }
+        } catch (err) {
+            console.error('Image upload network error:', err);
+            setUploadError('Network error connecting to backend upload endpoint.');
+            handleError('Could not connect to image upload service.');
+            setFormData(prev => ({ ...prev, imageUrl: '' }));
+            setIsCustomUploaded(false);
+        } finally {
+            setIsUploadingImage(false);
+        }
+    };
+
+    const handleFileInputChange = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            handleImageFile(file);
+        }
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) {
+            handleImageFile(file);
+        }
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleRemoveImage = () => {
+        setFormData(prev => ({ ...prev, imageUrl: '' }));
+        setIsCustomUploaded(false);
+        setUploadError('');
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     // Handle form submit
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (isUploadingImage) {
+            return handleError('Please wait for your image to finish uploading to Cloudinary before listing.');
+        }
 
         // Basic client validation
         if (!formData.title.trim()) {
@@ -174,6 +307,8 @@ function AddProduce() {
         }
     };
 
+    const activeDisplayImage = formData.imageUrl || currentCategoryRule.defaultImage;
+
     return (
         <div className="add-produce-page">
             <div className="add-produce-card">
@@ -185,6 +320,17 @@ function AddProduce() {
                         Share surplus vegetables from your garden or farm with nearby neighbors before they spoil.
                     </p>
                 </div>
+
+                {/* Cloudinary Info Banner if not configured */}
+                {cloudinaryStatus.checked && !cloudinaryStatus.isConfigured && (
+                    <div className="cloudinary-setup-banner">
+                        <div className="setup-banner-icon">☁️</div>
+                        <div className="setup-banner-text">
+                            <strong>Cloudinary Storage Ready for Setup:</strong>
+                            <span> To enable direct photo uploads, add your Cloudinary API credentials to <code>backend/.env</code>. (Default high-res category photos are active in the meantime).</span>
+                        </div>
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="produce-form">
                     {/* Produce Title */}
@@ -305,20 +451,151 @@ function AddProduce() {
                         </select>
                     </div>
 
-                    {/* Produce Photo URL */}
-                    <div className="form-group">
-                        <label htmlFor="imageUrl">Produce Photo URL (Optional)</label>
+                    {/* CLOUDINARY IMAGE UPLOAD SECTION */}
+                    <div className="form-group image-upload-group">
+                        <label className="section-label">
+                            📸 Produce Photo (Direct Cloudinary Upload)
+                        </label>
+                        <span className="upload-subtitle">
+                            Upload a real photo of your harvest to help neighbors see the freshness!
+                        </span>
+
+                        {/* Hidden file input */}
                         <input
-                            type="url"
-                            id="imageUrl"
-                            name="imageUrl"
-                            placeholder="Paste image link or leave empty to use fresh category photo"
-                            value={formData.imageUrl}
-                            onChange={handleChange}
+                            type="file"
+                            id="produceImageFile"
+                            ref={fileInputRef}
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            style={{ display: 'none' }}
+                            onChange={handleFileInputChange}
                         />
-                        <small className="hint-text">
-                            📸 Tip: If empty, a beautiful high-res photo matching your vegetable category will be automatically provided.
-                        </small>
+
+                        {/* Uploading Progress State */}
+                        {isUploadingImage && (
+                            <div className="upload-progress-box">
+                                <div className="upload-spinner"></div>
+                                <div className="upload-progress-text">
+                                    <strong>Uploading directly to Cloudinary...</strong>
+                                    <span>Optimizing and securing image CDN link</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Drop Zone (Shown when no custom image is uploaded and not uploading) */}
+                        {!formData.imageUrl && !isUploadingImage && (
+                            <div
+                                className={`image-drop-zone ${isDragging ? 'dragging' : ''}`}
+                                onDrop={handleDrop}
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                <div className="drop-icon">☁️ 📷</div>
+                                <div className="drop-main-text">
+                                    <strong>Tap to take a photo or select an image</strong>
+                                </div>
+                                <div className="drop-sub-text">
+                                    or drag & drop here (JPG, PNG, WEBP, GIF up to 5MB)
+                                </div>
+                                <button
+                                    type="button"
+                                    className="btn-select-file"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        fileInputRef.current?.click();
+                                    }}
+                                >
+                                    Browse Files / Camera
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Upload Error Box */}
+                        {uploadError && (
+                            <div className="upload-error-box">
+                                <span className="error-icon">⚠️</span>
+                                <span className="error-text">{uploadError}</span>
+                            </div>
+                        )}
+
+                        {/* Custom Uploaded Image Preview */}
+                        {formData.imageUrl && !isUploadingImage && (
+                            <div className="custom-image-preview-card">
+                                <div className="preview-media">
+                                    <img
+                                        src={formData.imageUrl}
+                                        alt="Uploaded produce"
+                                        className="preview-img"
+                                    />
+                                    <span className="preview-badge cloudinary-badge">
+                                        {isCustomUploaded ? '☁️ Uploaded to Cloudinary' : '🔗 Image URL Active'}
+                                    </span>
+                                </div>
+                                <div className="preview-actions">
+                                    <button
+                                        type="button"
+                                        className="btn-change-image"
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        🔄 Replace Photo
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn-remove-image"
+                                        onClick={handleRemoveImage}
+                                    >
+                                        🗑️ Remove
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Fallback / Default Image Preview Note */}
+                        {!formData.imageUrl && !isUploadingImage && (
+                            <div className="category-default-preview">
+                                <div className="category-preview-left">
+                                    <img
+                                        src={currentCategoryRule.defaultImage}
+                                        alt={formData.category}
+                                        className="category-mini-thumb"
+                                    />
+                                    <div className="category-preview-desc">
+                                        <span className="default-tag">Default Category Photo</span>
+                                        <small>Used automatically if no custom photo is uploaded.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Toggle Manual Image URL */}
+                        <div className="manual-url-toggle-wrap">
+                            <button
+                                type="button"
+                                className="btn-toggle-manual"
+                                onClick={() => setShowManualUrl(!showManualUrl)}
+                            >
+                                {showManualUrl ? '▲ Hide URL input' : '▼ Or enter image URL manually'}
+                            </button>
+                        </div>
+
+                        {showManualUrl && (
+                            <div className="manual-url-input-box">
+                                <input
+                                    type="url"
+                                    id="imageUrl"
+                                    name="imageUrl"
+                                    placeholder="https://example.com/produce.jpg"
+                                    value={formData.imageUrl}
+                                    onChange={(e) => {
+                                        setIsCustomUploaded(false);
+                                        handleChange(e);
+                                    }}
+                                />
+                                <small className="hint-text">
+                                    Direct image links from external CDNs or Cloudinary are supported.
+                                </small>
+                            </div>
+                        )}
                     </div>
 
                     {/* Description & Story */}
@@ -356,9 +633,13 @@ function AddProduce() {
                     <button
                         type="submit"
                         className="btn-submit-produce"
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isUploadingImage}
                     >
-                        {isSubmitting ? 'Publishing Produce...' : '🌿 List Produce for Neighbors'}
+                        {isSubmitting
+                            ? 'Publishing Produce...'
+                            : isUploadingImage
+                                ? 'Uploading Image...'
+                                : '🌿 List Produce for Neighbors'}
                     </button>
                 </form>
             </div>

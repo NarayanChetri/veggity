@@ -4,11 +4,12 @@ import './LocationSearch.css';
 
 /**
  * LocationSearch Component
- * Accurate hyperlocal location picker with:
- *  - Interactive Draggable Map Pin selection (Leaflet / OpenStreetMap).
- *  - 1-click GPS auto-detection with fine-grained locality extraction.
- *  - Fast autocomplete search (Photon + OpenStreetMap Nominatim fallback).
+ * Modern unified hyperlocal location search bar with:
+ *  - Inline Draggable Map Pin action button (Leaflet / OpenStreetMap).
+ *  - Inline 1-click GPS auto-detection button.
+ *  - Non-intrusive autocomplete suggestions (Photon + Nominatim fallback).
  *  - Persistent storage in localStorage so user's neighborhood is remembered.
+ *  - Strict safety: Dropdown NEVER auto-opens on landing page or without user typing.
  */
 function LocationSearch({
     onLocationSelect,
@@ -26,28 +27,50 @@ function LocationSearch({
     const [selectedCoords, setSelectedCoords] = useState({ lat: 26.7017, lng: 92.8302 });
 
     const wrapperRef = useRef(null);
+    const inputRef = useRef(null);
+    const isUserTypingRef = useRef(false);
 
-    // Sync initialValue if provided or changed by parent
+    // Sync initialValue when provided by parent without ever opening dropdown
     useEffect(() => {
-        if (initialValue && !query) {
+        if (initialValue && initialValue !== query) {
+            isUserTypingRef.current = false;
             setQuery(initialValue);
+            setIsOpen(false);
+            setSuggestions([]);
         }
     }, [initialValue]);
 
-    // Close suggestions dropdown when clicking outside
+    // Close suggestions dropdown when clicking or touching outside
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
                 setIsOpen(false);
+                isUserTypingRef.current = false;
             }
         };
+
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        document.addEventListener('touchstart', handleClickOutside, { passive: true });
+        document.addEventListener('pointerdown', handleClickOutside);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('touchstart', handleClickOutside);
+            document.removeEventListener('pointerdown', handleClickOutside);
+        };
     }, []);
 
     // Autocomplete with Debounce (Photon API + Nominatim Fallback)
     useEffect(() => {
         if (!query || query.trim().length < 2) {
+            setSuggestions([]);
+            setIsOpen(false);
+            return;
+        }
+
+        // CRITICAL: NEVER search or open dropdown on initial load, autofill or programmatic sync
+        if (!isUserTypingRef.current) {
+            setIsOpen(false);
             return;
         }
 
@@ -60,7 +83,7 @@ function LocationSearch({
 
                 // 1. Try Photon Geocoding Engine (with India geographical bias)
                 try {
-                    const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(cleanQuery)}&limit=10&lat=26.7017&lon=92.8302`;
+                    const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(cleanQuery)}&limit=8&lat=26.7017&lon=92.8302`;
                     const res = await fetch(photonUrl);
                     const data = await res.json();
 
@@ -94,7 +117,7 @@ function LocationSearch({
                 // 2. Fallback to OpenStreetMap Nominatim if Photon returned few/no results
                 if (formatted.length === 0) {
                     try {
-                        const osmUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleanQuery)}&countrycodes=in&limit=8&addressdetails=1`;
+                        const osmUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleanQuery)}&countrycodes=in&limit=6&addressdetails=1`;
                         const res = await fetch(osmUrl, {
                             headers: { 'Accept-Language': 'en' }
                         });
@@ -121,7 +144,11 @@ function LocationSearch({
                 }
 
                 setSuggestions(formatted);
-                setIsOpen(true);
+                if (isUserTypingRef.current && formatted.length > 0) {
+                    setIsOpen(true);
+                } else {
+                    setIsOpen(false);
+                }
             } catch (err) {
                 console.error("Autocomplete search error:", err);
             } finally {
@@ -132,58 +159,76 @@ function LocationSearch({
         return () => clearTimeout(debounceTimer);
     }, [query]);
 
+    // Input handlers
+    const handleInputChange = (e) => {
+        const val = e.target.value;
+        isUserTypingRef.current = true;
+        setQuery(val);
+        setStatusText('');
+        if (!val.trim() || val.trim().length < 2) {
+            setSuggestions([]);
+            setIsOpen(false);
+        }
+    };
+
+    const handleInputFocus = () => {
+        // Only open if the user actively typed a search query before and there are suggestions
+        if (isUserTypingRef.current && suggestions.length > 0) {
+            setIsOpen(true);
+        }
+    };
+
     // Handle place selection from suggestions
     const handleSelectPlace = (place) => {
+        isUserTypingRef.current = false;
         setQuery(place.name);
         setIsOpen(false);
-        setStatusText(`📍 Location set: ${place.name}`);
+        setSuggestions([]);
+        setStatusText(`📍 Location: ${place.name}`);
         setSelectedCoords({ lat: place.lat, lng: place.lng });
 
+        const locData = {
+            name: place.name,
+            subtitle: place.subtitle || '',
+            lat: place.lat,
+            lng: place.lng
+        };
+
         try {
-            localStorage.setItem('veggity_location', JSON.stringify({
-                name: place.name,
-                subtitle: place.subtitle || '',
-                lat: place.lat,
-                lng: place.lng
-            }));
+            localStorage.setItem('veggity_location', JSON.stringify(locData));
         } catch (_e) {}
 
         if (onLocationSelect) {
-            onLocationSelect({
-                name: place.name,
-                subtitle: place.subtitle,
-                lat: place.lat,
-                lng: place.lng
-            });
+            onLocationSelect(locData);
         }
     };
 
     // Confirm location chosen from Draggable Pin Map Modal
     const handleMapPinConfirm = (place) => {
+        isUserTypingRef.current = false;
         setQuery(place.name);
+        setIsOpen(false);
+        setSuggestions([]);
         setStatusText(`📍 Pin locked: ${place.name}`);
         setSelectedCoords({ lat: place.lat, lng: place.lng });
 
+        const locData = {
+            name: place.name,
+            subtitle: '',
+            lat: place.lat,
+            lng: place.lng
+        };
+
         try {
-            localStorage.setItem('veggity_location', JSON.stringify({
-                name: place.name,
-                subtitle: '',
-                lat: place.lat,
-                lng: place.lng
-            }));
+            localStorage.setItem('veggity_location', JSON.stringify(locData));
         } catch (_e) {}
 
         if (onLocationSelect) {
-            onLocationSelect({
-                name: place.name,
-                subtitle: '',
-                lat: place.lat,
-                lng: place.lng
-            });
+            onLocationSelect(locData);
         }
     };
 
-    // Blinkit/Zepto 1-Click GPS Auto-Detect
+    // 1-Click GPS Auto-Detect
     const handleAutoDetect = () => {
         if (!navigator.geolocation) {
             alert("Your browser does not support GPS location");
@@ -192,6 +237,7 @@ function LocationSearch({
 
         setIsDetecting(true);
         setStatusText("📡 Locating your exact GPS position...");
+        setIsOpen(false);
 
         navigator.geolocation.getCurrentPosition(
             async (position) => {
@@ -235,9 +281,11 @@ function LocationSearch({
                     } catch (_osmErr) {}
 
                     const finalName = detectedName || `Current Location (${lat.toFixed(3)}, ${lng.toFixed(3)})`;
+                    isUserTypingRef.current = false;
                     setQuery(finalName);
                     setStatusText(`📍 GPS locked: ${finalName}`);
                     setIsOpen(false);
+                    setSuggestions([]);
 
                     const locData = { name: finalName, subtitle, lat, lng };
                     try {
@@ -250,8 +298,10 @@ function LocationSearch({
                 } catch (err) {
                     console.error("Auto-detect failed:", err);
                     const fallbackName = `GPS (${lat.toFixed(3)}, ${lng.toFixed(3)})`;
+                    isUserTypingRef.current = false;
                     setQuery(fallbackName);
                     setStatusText("📍 GPS locked");
+                    setIsOpen(false);
                     if (onLocationSelect) {
                         onLocationSelect({ name: fallbackName, lat, lng });
                     }
@@ -269,108 +319,91 @@ function LocationSearch({
     };
 
     const handleClear = () => {
+        isUserTypingRef.current = false;
         setQuery('');
         setSuggestions([]);
+        setIsOpen(false);
         setStatusText('');
+        if (inputRef.current) {
+            inputRef.current.focus();
+        }
     };
 
     return (
         <div className="location-box-wrapper" ref={wrapperRef}>
-            {/* Row 1: Full-Width Search Input (Never squished) */}
+            {/* Unified Modern Search Bar (With Inline Pin-on-Map and Auto-Detect) */}
             <div className="location-search-bar">
-                <span className="search-pin-icon">📍</span>
+                <span className="search-pin-icon" aria-hidden="true">📍</span>
                 <input
+                    ref={inputRef}
                     type="text"
                     className="location-input-field"
                     value={query}
                     autoComplete="off"
                     autoCorrect="off"
                     spellCheck="false"
-                    onChange={(e) => {
-                        setQuery(e.target.value);
-                        setStatusText('');
-                        if (!e.target.value) {
-                            setSuggestions([]);
-                        }
-                    }}
+                    onChange={handleInputChange}
                     placeholder={placeholder}
-                    onFocus={() => setIsOpen(true)}
+                    onFocus={handleInputFocus}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Escape') setIsOpen(false);
+                    }}
                 />
-                {query && (
+
+                <div className="search-inline-actions">
+                    {query && (
+                        <button
+                            type="button"
+                            className="btn-inline-clear"
+                            onClick={handleClear}
+                            title="Clear input"
+                            aria-label="Clear location input"
+                        >
+                            ✕
+                        </button>
+                    )}
+
+                    <span className="search-actions-divider" aria-hidden="true" />
+
+                    {/* 🗺️ In-Search Pin on Map Action Button */}
                     <button
                         type="button"
-                        className="btn-clear-input"
-                        onClick={handleClear}
-                        title="Clear location"
-                    >
-                        ✕
-                    </button>
-                )}
-            </div>
-
-            {/* Row 2: Location Action Buttons (Pin on Map + GPS Auto-Detect) */}
-            <div className="location-actions-bar">
-                {/* 📍 Interactive Pin on Map Picker */}
-                <button
-                    type="button"
-                    className="btn-pick-pin-map"
-                    onClick={() => setIsMapModalOpen(true)}
-                    title="Open map to drag and place pin accurately"
-                >
-                    <span className="action-btn-icon">📍</span>
-                    <span className="action-btn-text">Choose Pin on Map</span>
-                </button>
-
-                {/* 🎯 Device GPS Auto-Detect */}
-                {showAutoDetect && (
-                    <button
-                        type="button"
-                        className="btn-auto-detect-gps"
-                        onClick={handleAutoDetect}
-                        disabled={isDetecting}
-                        title="Detect GPS coordinates instantly"
-                    >
-                        <span className="action-btn-icon">{isDetecting ? '📡' : '🎯'}</span>
-                        <span className="action-btn-text">{isDetecting ? 'Locating...' : 'Auto Detect GPS'}</span>
-                    </button>
-                )}
-            </div>
-
-            {isLoading && <small className="loading-hint">Searching nearby places...</small>}
-
-            {/* Suggestions & Quick Dropdown */}
-            {isOpen && (
-                <ul className="suggestions-list">
-                    {/* 1-Tap Pin on Map option */}
-                    <li
-                        className="dropdown-action-item pin-map-item"
+                        className="btn-search-action btn-action-map"
                         onClick={() => {
                             setIsOpen(false);
                             setIsMapModalOpen(true);
                         }}
+                        title="Choose pin on interactive map"
+                        aria-label="Choose pin on interactive map"
                     >
-                        <div className="action-item-content">
-                            <span className="action-item-icon">📍</span>
-                            <div>
-                                <strong>Choose Accurate Location with Pin</strong>
-                                <small>Drag pin on interactive map for exact spot</small>
-                            </div>
-                        </div>
-                    </li>
+                        <span className="action-btn-icon">🗺️</span>
+                        <span className="action-btn-text">Map</span>
+                    </button>
 
-                    {/* 1-Tap GPS Auto Detect option */}
-                    <li className="dropdown-action-item gps-item" onClick={handleAutoDetect}>
-                        <div className="action-item-content">
-                            <span className="action-item-icon">🎯</span>
-                            <div>
-                                <strong>Use Current Location</strong>
-                                <small>Auto-detect using device GPS</small>
-                            </div>
-                        </div>
-                    </li>
+                    {/* 🎯 In-Search GPS Auto Detect Action Button */}
+                    {showAutoDetect && (
+                        <button
+                            type="button"
+                            className={`btn-search-action btn-action-gps ${isDetecting ? 'is-detecting' : ''}`}
+                            onClick={handleAutoDetect}
+                            disabled={isDetecting}
+                            title="Detect current GPS location"
+                            aria-label="Detect current GPS location"
+                        >
+                            <span className="action-btn-icon">{isDetecting ? '📡' : '🎯'}</span>
+                            <span className="action-btn-text">{isDetecting ? 'Locating...' : 'GPS'}</span>
+                        </button>
+                    )}
+                </div>
+            </div>
 
+            {isLoading && <small className="loading-hint">Searching nearby places...</small>}
+
+            {/* Suggestions Dropdown (Only genuine matching places when user types) */}
+            {isOpen && suggestions.length > 0 && (
+                <ul className="suggestions-list" role="listbox">
                     {suggestions.map((place) => (
-                        <li key={place.id} onClick={() => handleSelectPlace(place)}>
+                        <li key={place.id} onClick={() => handleSelectPlace(place)} role="option">
                             <strong>📍 {place.name}</strong>
                             {place.subtitle && <small>{place.subtitle}</small>}
                         </li>

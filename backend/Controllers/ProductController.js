@@ -1,5 +1,6 @@
 const ProductModel = require('../Models/Product');
 const UserModel = require('../Models/User');
+const { uploadToCloudinary, isCloudinaryConfigured } = require('../Config/cloudinary');
 
 // Helper: Calculate distance between two GPS coordinates in kilometers (Haversine formula)
 function calculateDistanceKm(lat1, lon1, lat2, lon2) {
@@ -413,8 +414,63 @@ const seedSampleProducts = async (req, res) => {
     }
 };
 
+// 4. CHECK CLOUDINARY CONFIGURATION STATUS
+const getCloudinaryStatus = (req, res) => {
+    try {
+        const configured = isCloudinaryConfigured();
+        res.status(200).json({
+            success: true,
+            isConfigured: configured,
+            cloudName: configured ? process.env.CLOUDINARY_CLOUD_NAME : null
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Error checking Cloudinary status' });
+    }
+};
+
+// 5. UPLOAD PRODUCE IMAGE DIRECTLY TO CLOUDINARY
+const uploadProductImage = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No image file uploaded. Please select an image file.'
+            });
+        }
+
+        if (!isCloudinaryConfigured()) {
+            return res.status(503).json({
+                success: false,
+                needsConfig: true,
+                message: 'Cloudinary credentials missing on server. Please configure CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in backend/.env'
+            });
+        }
+
+        // Stream memory buffer directly to Cloudinary
+        const result = await uploadToCloudinary(req.file.buffer, 'veggity_produce');
+
+        return res.status(200).json({
+            success: true,
+            message: 'Image uploaded successfully to Cloudinary!',
+            imageUrl: result.secure_url,
+            publicId: result.public_id,
+            width: result.width,
+            height: result.height,
+            format: result.format
+        });
+    } catch (err) {
+        console.error('Error uploading image to Cloudinary:', err);
+        return res.status(500).json({
+            success: false,
+            message: err.message || 'Failed to upload image to Cloudinary'
+        });
+    }
+};
+
 module.exports = {
     addProduct,
     getNearbyProducts,
-    seedSampleProducts
+    seedSampleProducts,
+    getCloudinaryStatus,
+    uploadProductImage
 };

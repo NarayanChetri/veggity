@@ -1,14 +1,17 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const cors = require('cors');
+
+require('./Models/db');
+
 const AuthRouter = require('./Routes/AuthRouter');
 const ProductRouter = require('./Routes/ProductRouter');
 const OrderRouter = require('./Routes/OrderRouter');
 
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
-require('./Models/db');
 const PORT = process.env.PORT || 8080;
 
 // Middlewares

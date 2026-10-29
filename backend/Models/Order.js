@@ -43,6 +43,7 @@ const OrderSchema = new mongoose.Schema({
             },
             title: { type: String, required: true },
             category: { type: String, default: '' },
+            imageUrl: { type: String, default: '' },
             price: { type: Number, required: true },
             unit: { type: String, default: 'kg' },
             quantity: { type: Number, required: true },
@@ -64,13 +65,44 @@ const OrderSchema = new mongoose.Schema({
 
     status: {
         type: String,
-        enum: ['Received', 'Packed', 'Out for Delivery', 'Completed', 'Cancelled'],
-        default: 'Received'
+        enum: [
+            'Order Placed',
+            'Received',
+            'Packed',
+            'Moved',
+            'Out for Delivery',
+            'Arriving Soon',
+            'Arriving',
+            'Delivered',
+            'Completed',
+            'Cancelled'
+        ],
+        default: 'Order Placed'
     },
 
     notes: {
         type: String,
         default: ''
+    },
+
+    // Rating and review submitted by buyer after delivery
+    rating: {
+        score: {
+            type: Number,
+            min: 1,
+            max: 5
+        },
+        review: {
+            type: String,
+            default: ''
+        },
+        createdAt: {
+            type: Date
+        }
+    },
+    isRated: {
+        type: Boolean,
+        default: false
     },
 
     createdAt: {

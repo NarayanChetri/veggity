@@ -134,39 +134,60 @@ function ProductDetailsModal({ product, onClose }) {
                     </div>
 
                     <div className="footer-actions-group">
-                        {qtyInCart === 0 ? (
-                            <button className="btn-modal-add-cart" onClick={handleAddToCartAndOpen}>
-                                🛒 Add to Cart • ₹{product.price}
-                            </button>
-                        ) : (
-                            <div className="modal-stepper-group">
-                                <div className="modal-qty-stepper">
-                                    <button
-                                        className="btn-modal-step"
-                                        onClick={() => updateQuantity(product._id, -1)}
-                                    >
-                                        -
+                        {(() => {
+                            const loggedInEmail = (localStorage.getItem('loggedInEmail') || '').toLowerCase().trim();
+                            const loggedInUser = (localStorage.getItem('loggedInUser') || '').toLowerCase().trim();
+                            const isOwnProduct = Boolean(
+                                (loggedInEmail && product.seller?.email?.toLowerCase() === loggedInEmail) ||
+                                (loggedInUser && product.seller?.name?.toLowerCase() === loggedInUser)
+                            );
+
+                            if (isOwnProduct) {
+                                return (
+                                    <div className="modal-own-listing-notice">
+                                        🌿 You listed this produce in your garden inventory
+                                    </div>
+                                );
+                            }
+
+                            if (qtyInCart === 0) {
+                                return (
+                                    <button className="btn-modal-add-cart" onClick={handleAddToCartAndOpen}>
+                                        🛒 Add to Cart • ₹{product.price}
                                     </button>
-                                    <span className="modal-qty-val">{qtyInCart} in cart</span>
+                                );
+                            }
+
+                            return (
+                                <div className="modal-stepper-group">
+                                    <div className="modal-qty-stepper">
+                                        <button
+                                            className="btn-modal-step"
+                                            onClick={() => updateQuantity(product._id, -1)}
+                                        >
+                                            -
+                                        </button>
+                                        <span className="modal-qty-val">{qtyInCart} in cart</span>
+                                        <button
+                                            className="btn-modal-step"
+                                            onClick={() => updateQuantity(product._id, 1)}
+                                            disabled={qtyInCart >= product.quantity}
+                                        >
+                                            +
+                                        </button>
+                                    </div>
                                     <button
-                                        className="btn-modal-step"
-                                        onClick={() => updateQuantity(product._id, 1)}
-                                        disabled={qtyInCart >= product.quantity}
+                                        className="btn-view-cart-direct"
+                                        onClick={() => {
+                                            onClose();
+                                            setIsCartOpen(true);
+                                        }}
                                     >
-                                        +
+                                        View Cart →
                                     </button>
                                 </div>
-                                <button
-                                    className="btn-view-cart-direct"
-                                    onClick={() => {
-                                        onClose();
-                                        setIsCartOpen(true);
-                                    }}
-                                >
-                                    View Cart →
-                                </button>
-                            </div>
-                        )}
+                            );
+                        })()}
                     </div>
                 </div>
             </div>

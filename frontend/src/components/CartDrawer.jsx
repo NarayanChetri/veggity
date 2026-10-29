@@ -22,22 +22,59 @@ function CartDrawer() {
     const [buyerAddress, setBuyerAddress] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('Cash on Delivery');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isEditingAddress, setIsEditingAddress] = useState(false);
 
-    // Pre-populate name & address from localStorage
+    // Pre-populate name, phone & address from localStorage
     useEffect(() => {
-        const savedUser = localStorage.getItem('loggedInUser');
-        if (savedUser) setBuyerName(savedUser);
+        if (!isCartOpen) return;
 
-        try {
-            const savedLoc = localStorage.getItem('veggity_location');
-            if (savedLoc) {
-                const parsed = JSON.parse(savedLoc);
-                setBuyerAddress(parsed.name + (parsed.subtitle ? `, ${parsed.subtitle}` : ''));
-            }
-        } catch (_e) {}
+        const savedUser = localStorage.getItem('veggity_saved_name') || localStorage.getItem('loggedInUser') || '';
+        const savedPhone = localStorage.getItem('veggity_saved_phone') || '';
+        let savedAddress = localStorage.getItem('veggity_saved_address') || '';
+
+        if (!savedAddress) {
+            try {
+                const savedLoc = localStorage.getItem('veggity_location');
+                if (savedLoc) {
+                    const parsed = JSON.parse(savedLoc);
+                    savedAddress = parsed.name + (parsed.subtitle ? `, ${parsed.subtitle}` : '');
+                }
+            } catch (_e) {}
+        }
+
+        setBuyerName(savedUser);
+        setBuyerPhone(savedPhone);
+        setBuyerAddress(savedAddress);
+
+        // If user already has a saved phone and address, show summary with edit button
+        if (savedPhone && savedAddress) {
+            setIsEditingAddress(false);
+        } else {
+            setIsEditingAddress(true);
+        }
     }, [isCartOpen]);
 
     if (!isCartOpen) return null;
+
+    const handleSaveAddressDetails = (e) => {
+        if (e) e.preventDefault();
+        if (!buyerName.trim()) {
+            return handleError('Please enter your full name');
+        }
+        if (!buyerPhone.trim() || buyerPhone.trim().length < 10) {
+            return handleError('Please enter a valid 10-digit phone number');
+        }
+        if (!buyerAddress.trim()) {
+            return handleError('Please enter your delivery address');
+        }
+
+        // Persist to localStorage
+        localStorage.setItem('veggity_saved_name', buyerName.trim());
+        localStorage.setItem('veggity_saved_phone', buyerPhone.trim());
+        localStorage.setItem('veggity_saved_address', buyerAddress.trim());
+        setIsEditingAddress(false);
+        handleSuccess('Delivery address and contact saved!');
+    };
 
     const handleCheckout = async (e) => {
         e.preventDefault();
@@ -51,14 +88,22 @@ function CartDrawer() {
         }
 
         if (!buyerName.trim()) {
+            setIsEditingAddress(true);
             return handleError('Please enter your full name');
         }
         if (!buyerPhone.trim() || buyerPhone.trim().length < 10) {
+            setIsEditingAddress(true);
             return handleError('Please enter a valid 10-digit phone number');
         }
         if (!buyerAddress.trim()) {
+            setIsEditingAddress(true);
             return handleError('Please enter your house/society address for delivery/pickup');
         }
+
+        // Always save delivery and contact information for effortless future orders
+        localStorage.setItem('veggity_saved_name', buyerName.trim());
+        localStorage.setItem('veggity_saved_phone', buyerPhone.trim());
+        localStorage.setItem('veggity_saved_address', buyerAddress.trim());
 
         setIsSubmitting(true);
 
@@ -97,13 +142,12 @@ function CartDrawer() {
             const data = await response.json();
 
             if (data.success) {
-                handleSuccess('🎉 Order placed successfully! The grower has received your details.');
+                handleSuccess('🎉 Order placed successfully! Directing you to your purchases tracker...');
                 clearCart();
                 setIsCartOpen(false);
-                // Optionally navigate to dashboard to see the order
                 setTimeout(() => {
-                    navigate('/dashboard');
-                }, 1500);
+                    navigate('/orders');
+                }, 600);
             } else {
                 handleError(data.message || 'Failed to place order');
             }
@@ -142,6 +186,14 @@ function CartDrawer() {
                         <div className="cart-items-list">
                             {cartItems.map((item) => (
                                 <div key={item._id} className="cart-item-card">
+                                    <img
+                                        src={item.imageUrl || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=200&auto=format&fit=crop&q=80'}
+                                        alt={item.title}
+                                        className="cart-item-thumb"
+                                        onError={(e) => {
+                                            e.target.src = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=200&auto=format&fit=crop&q=80';
+                                        }}
+                                    />
                                     <div className="cart-item-info">
                                         <h4 className="item-title">{item.title}</h4>
                                         <span className="item-category-unit">
@@ -152,20 +204,19 @@ function CartDrawer() {
                                         )}
                                     </div>
 
-                                    <div className="cart-item-actions">
-                                        {/* Stepper (+ / -) */}
-                                        <div className="qty-stepper">
+                                    {/* Stepper & Delete */}
+                                    <div className="item-controls">
+                                        <div className="cart-item-stepper">
                                             <button
-                                                className="btn-step"
+                                                className="btn-cart-step"
                                                 onClick={() => updateQuantity(item._id, -1)}
                                             >
                                                 -
                                             </button>
-                                            <span className="qty-num">{item.quantity}</span>
+                                            <span className="cart-qty-count">{item.quantity}</span>
                                             <button
-                                                className="btn-step"
+                                                className="btn-cart-step"
                                                 onClick={() => updateQuantity(item._id, 1)}
-                                                disabled={item.quantity >= (item.quantityAvailable || 99)}
                                             >
                                                 +
                                             </button>
@@ -207,41 +258,76 @@ function CartDrawer() {
 
                         {/* Checkout & Delivery Details Form */}
                         <form onSubmit={handleCheckout} className="checkout-form">
-                            <h4 className="checkout-title">📍 Delivery / Contact Information</h4>
+                            <h4 className="checkout-title">📍 Delivery & Contact Information</h4>
 
-                            <div className="checkout-field">
-                                <label>Your Name *</label>
-                                <input
-                                    type="text"
-                                    placeholder="Enter full name"
-                                    value={buyerName}
-                                    onChange={(e) => setBuyerName(e.target.value)}
-                                    required
-                                />
-                            </div>
+                            {/* Saved Address Summary Mode */}
+                            {!isEditingAddress && buyerPhone && buyerAddress ? (
+                                <div className="saved-contact-card">
+                                    <div className="saved-contact-header">
+                                        <div className="saved-contact-left">
+                                            <span className="saved-tag">✓ Saved Address</span>
+                                            <strong>{buyerName}</strong>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="btn-edit-saved-address"
+                                            onClick={() => setIsEditingAddress(true)}
+                                        >
+                                            ✏️ Edit
+                                        </button>
+                                    </div>
+                                    <p className="saved-contact-phone">📞 {buyerPhone}</p>
+                                    <p className="saved-contact-address">🏠 {buyerAddress}</p>
+                                </div>
+                            ) : (
+                                /* Full Editable Fields Mode */
+                                <div className="address-inputs-group">
+                                    <div className="checkout-field">
+                                        <label>Your Name *</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Enter full name"
+                                            value={buyerName}
+                                            onChange={(e) => setBuyerName(e.target.value)}
+                                            required
+                                        />
+                                    </div>
 
-                            <div className="checkout-field">
-                                <label>10-Digit Mobile Number *</label>
-                                <input
-                                    type="tel"
-                                    placeholder="e.g. 9876543210"
-                                    value={buyerPhone}
-                                    onChange={(e) => setBuyerPhone(e.target.value)}
-                                    required
-                                />
-                            </div>
+                                    <div className="checkout-field">
+                                        <label>10-Digit Mobile Number *</label>
+                                        <input
+                                            type="tel"
+                                            placeholder="e.g. 9876543210"
+                                            value={buyerPhone}
+                                            onChange={(e) => setBuyerPhone(e.target.value)}
+                                            required
+                                        />
+                                    </div>
 
-                            <div className="checkout-field">
-                                <label>House / Flat No., Society & Street *</label>
-                                <textarea
-                                    placeholder="e.g. Flat 302, Block B, Green Heights, Landmark: Near Temple"
-                                    value={buyerAddress}
-                                    onChange={(e) => setBuyerAddress(e.target.value)}
-                                    rows="2"
-                                    required
-                                />
-                            </div>
+                                    <div className="checkout-field">
+                                        <label>House / Flat No., Society & Street *</label>
+                                        <textarea
+                                            placeholder="e.g. Flat 302, Block B, Green Heights, Near Temple"
+                                            value={buyerAddress}
+                                            onChange={(e) => setBuyerAddress(e.target.value)}
+                                            rows="2"
+                                            required
+                                        />
+                                    </div>
 
+                                    {buyerPhone && buyerAddress && (
+                                        <button
+                                            type="button"
+                                            className="btn-done-address"
+                                            onClick={handleSaveAddressDetails}
+                                        >
+                                            ✓ Save Delivery Details
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Payment Method */}
                             <div className="checkout-field">
                                 <label>Payment Method</label>
                                 <div className="payment-options">
@@ -284,4 +370,3 @@ function CartDrawer() {
 }
 
 export default CartDrawer;
-

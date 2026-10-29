@@ -28,6 +28,16 @@ const createOrder = async (req, res) => {
             ordersBySeller[sellerId].push(item);
         }
 
+        // Prevent users from ordering their own produce listings
+        for (const sellerId of Object.keys(ordersBySeller)) {
+            if (sellerId === String(buyerId)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'You cannot place an order for your own produce listings.'
+                });
+            }
+        }
+
         const createdOrders = [];
 
         // Create an order for each grower
@@ -45,6 +55,7 @@ const createOrder = async (req, res) => {
                     product: it._id || it.product,
                     title: it.title,
                     category: it.category || '',
+                    imageUrl: it.imageUrl || '',
                     price: price,
                     unit: it.unit || 'kg',
                     quantity: qty,
@@ -76,7 +87,7 @@ const createOrder = async (req, res) => {
                 items: formattedItems,
                 totalAmount: totalAmount,
                 paymentMethod: paymentMethod || 'Cash on Delivery',
-                status: 'Received'
+                status: 'Order Placed'
             });
 
             await newOrder.save();
@@ -101,6 +112,7 @@ const getSellerOrders = async (req, res) => {
 
         const orders = await OrderModel.find({ seller: sellerId })
             .populate('buyer', 'name email')
+            .populate('items.product', 'imageUrl title category')
             .sort({ createdAt: -1 });
 
         res.status(200).json({
@@ -114,16 +126,27 @@ const getSellerOrders = async (req, res) => {
     }
 };
 
-// 3. UPDATE ORDER STATUS (Lister Dashboard: Received -> Packed -> Out for Delivery -> Completed)
+// 3. UPDATE ORDER STATUS (Lister Dashboard: Order Placed -> Packed -> Moved -> Arriving -> Delivered)
 const updateOrderStatus = async (req, res) => {
     try {
         const { orderId } = req.params;
         const { status } = req.body;
         const sellerId = req.user._id;
 
-        const validStatuses = ['Received', 'Packed', 'Out for Delivery', 'Completed', 'Cancelled'];
+        const validStatuses = [
+            'Order Placed',
+            'Received',
+            'Packed',
+            'Moved',
+            'Out for Delivery',
+            'Arriving Soon',
+            'Arriving',
+            'Delivered',
+            'Completed',
+            'Cancelled'
+        ];
         if (!validStatuses.includes(status)) {
-            return res.status(400).json({ success: false, message: 'Invalid order status' });
+            return res.status(400).json({ success: false, message: `Invalid status: ${status}. Valid options are: ${validStatuses.join(', ')}` });
         }
 
         const order = await OrderModel.findOne({ _id: orderId, seller: sellerId });
@@ -185,13 +208,40 @@ const deleteSellerListing = async (req, res) => {
     }
 };
 
-// 6. GET BUYER ORDERS (View orders placed by this user as a buyer)
+// 6. TOGGLE LISTING AVAILABILITY (In Stock / Out of Stock)
+const toggleListingAvailability = async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const sellerId = req.user._id;
+
+        const product = await ProductModel.findOne({ _id: productId, seller: sellerId });
+        if (!product) {
+            return res.status(404).json({ success: false, message: 'Produce not found or not owned by you' });
+        }
+
+        product.isAvailable = !product.isAvailable;
+        await product.save();
+
+        res.status(200).json({
+            success: true,
+            message: `Produce is now ${product.isAvailable ? 'In Stock (Active)' : 'Marked as Out of Stock'}`,
+            isAvailable: product.isAvailable,
+            product
+        });
+    } catch (err) {
+        console.error('Error in toggleListingAvailability:', err);
+        res.status(500).json({ success: false, message: 'Failed to toggle availability', error: err.message });
+    }
+};
+
+// 7. GET BUYER ORDERS (View orders placed by this user as a buyer)
 const getBuyerOrders = async (req, res) => {
     try {
         const buyerId = req.user._id;
 
         const orders = await OrderModel.find({ buyer: buyerId })
-            .populate('seller', 'name email')
+            .populate('seller', 'name email phone')
+            .populate('items.product', 'imageUrl title category')
             .sort({ createdAt: -1 });
 
         res.status(200).json({
@@ -205,11 +255,145 @@ const getBuyerOrders = async (req, res) => {
     }
 };
 
+// 8. UPDATE A SELLER LISTING (Edit description, price, stock, shelf life, image, etc.)
+const updateSellerListing = async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const sellerId = req.user._id;
+        const {
+            title,
+            category,
+            price,
+            unit,
+            quantity,
+            shelfLifeDays,
+            locationArea,
+            imageUrl,
+            description,
+            harvestMethod,
+            isAvailable
+        } = req.body;
+
+        const product = await ProductModel.findOne({ _id: productId, seller: sellerId });
+        if (!product) {
+            return res.status(404).json({ success: false, message: 'Produce listing not found or not owned by you' });
+        }
+
+        if (title !== undefined && title.trim()) product.title = title.trim();
+        if (category !== undefined && category.trim()) product.category = category.trim();
+        if (price !== undefined && !isNaN(price)) product.price = Number(price);
+        if (unit !== undefined && unit.trim()) product.unit = unit.trim();
+        if (quantity !== undefined && !isNaN(quantity)) product.quantity = Number(quantity);
+        if (locationArea !== undefined && locationArea.trim()) product.locationArea = locationArea.trim();
+        if (imageUrl !== undefined) product.imageUrl = imageUrl.trim();
+        if (description !== undefined) product.description = description.trim();
+        if (harvestMethod !== undefined && harvestMethod.trim()) product.harvestMethod = harvestMethod.trim();
+        if (isAvailable !== undefined) product.isAvailable = Boolean(isAvailable);
+
+        if (shelfLifeDays !== undefined && !isNaN(shelfLifeDays)) {
+            const days = Math.max(1, Number(shelfLifeDays));
+            product.shelfLifeDays = days;
+            product.expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+        }
+
+        await product.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Produce listing updated successfully!',
+            product
+        });
+    } catch (err) {
+        console.error('Error in updateSellerListing:', err);
+        res.status(500).json({ success: false, message: 'Failed to update produce listing', error: err.message });
+    }
+};
+
+// 9. RATE DELIVERED ORDER (Buyer rates produce quality & leaves feedback)
+const rateOrder = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const buyerId = req.user._id;
+        const { score, review } = req.body;
+
+        const ratingNum = Number(score);
+        if (!ratingNum || ratingNum < 1 || ratingNum > 5) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide a valid star rating between 1 and 5.'
+            });
+        }
+
+        const order = await OrderModel.findOne({ _id: orderId, buyer: buyerId });
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found or you are not authorized to rate it.'
+            });
+        }
+
+        const validDeliveryStatuses = ['delivered', 'completed'];
+        const currentStatus = (order.status || '').toLowerCase();
+        if (!validDeliveryStatuses.some((st) => currentStatus.includes(st))) {
+            return res.status(400).json({
+                success: false,
+                message: 'Ratings can only be submitted after your produce order has been delivered.'
+            });
+        }
+
+        // Save rating on order
+        order.isRated = true;
+        order.rating = {
+            score: ratingNum,
+            review: (review || '').trim(),
+            createdAt: new Date()
+        };
+        await order.save();
+
+        // Update rating statistics on each produce product in the order
+        for (const item of order.items) {
+            const prodId = item.product || item._id;
+            if (prodId) {
+                try {
+                    const prod = await ProductModel.findById(prodId);
+                    if (prod) {
+                        const currentCount = prod.ratingCount || 0;
+                        const currentRating = prod.rating || 5.0;
+                        const newCount = currentCount + 1;
+                        const newRating = Math.round(((currentRating * currentCount + ratingNum) / newCount) * 10) / 10;
+                        prod.rating = newRating;
+                        prod.ratingCount = newCount;
+                        await prod.save();
+                    }
+                } catch (prodErr) {
+                    console.warn('Could not update produce rating:', prodErr);
+                }
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: '⭐ Thank you for rating your fresh harvest!',
+            order
+        });
+    } catch (err) {
+        console.error('Error in rateOrder:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to submit rating',
+            error: err.message
+        });
+    }
+};
+
 module.exports = {
     createOrder,
     getSellerOrders,
     updateOrderStatus,
     getSellerListings,
     deleteSellerListing,
-    getBuyerOrders
+    toggleListingAvailability,
+    getBuyerOrders,
+    updateSellerListing,
+    rateOrder
 };

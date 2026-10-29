@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "seed": "node seed.js"
+    "seed": "node seed.js",
+    "seed:user": "node seed-user.js"
   },
   "keywords": [],
   "author": "",
@@ -15,11 +16,13 @@
   "dependencies": {
     "bcrypt": "^6.0.0",
     "body-parser": "^2.3.0",
+    "cloudinary": "^2.11.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "joi": "^18.2.9",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.10.1"
+    "mongoose": "^9.10.1",
+    "multer": "^2.5.0"
   }
 }

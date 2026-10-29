@@ -161,6 +161,117 @@
     border-radius: 8px;
 }
 
+/* Saved Contact Box */
+.account-contact-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 4px 0;
+}
+
+.account-contact-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-edit-account-contact {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-edit-account-contact:hover {
+    background: #d1fae5;
+}
+
+.account-contact-view {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sub-row {
+    border-bottom: none !important;
+    padding: 2px 0 !important;
+    font-size: 12px !important;
+}
+
+.account-contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+}
+
+.form-mini-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.form-mini-field label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #475569;
+}
+
+.form-mini-field input,
+.form-mini-field textarea {
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+    font-family: inherit;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.form-mini-field input:focus,
+.form-mini-field textarea:focus {
+    border-color: #059669;
+}
+
+.form-mini-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.btn-cancel-mini {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-save-mini {
+    background: #059669;
+    border: none;
+    color: #ffffff;
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
 .account-modal-footer {
     padding: 14px 20px;
     border-top: 1px solid #e2e8f0;

@@ -75,9 +75,16 @@ function Home() {
     const [radiusKm, setRadiusKm] = useState(5);
     const [selectedCategory, setSelectedCategory] = useState('all');
 
-    // 5. Products list & loading states
-    const [products, setProducts] = useState([]);
+    // 5. Products list & loading states (with instant session cache)
+    const [products, setProducts] = useState(() => {
+        try {
+            const cached = sessionStorage.getItem('veggity_cached_products');
+            if (cached) return JSON.parse(cached);
+        } catch (_e) {}
+        return [];
+    });
     const [loading, setLoading] = useState(false);
+    const [isSlowLoading, setIsSlowLoading] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
 
     // 6. User Profile Modals state
@@ -89,6 +96,13 @@ function Home() {
         if (!lat || !lng) return;
 
         setLoading(true);
+        setIsSlowLoading(false);
+
+        // Timer to detect if Render backend is in cold-start wakeup (> 3.5s)
+        const slowTimer = setTimeout(() => {
+            setIsSlowLoading(true);
+        }, 3500);
+
         try {
             let url = `${API_URL}/products/nearby?latitude=${lat}&longitude=${lng}&radiusKm=${radius}`;
             if (category && category !== 'all') {
@@ -113,7 +127,11 @@ function Home() {
             const data = await response.json();
 
             if (data.success) {
-                setProducts(data.products || []);
+                const list = data.products || [];
+                setProducts(list);
+                try {
+                    sessionStorage.setItem('veggity_cached_products', JSON.stringify(list));
+                } catch (_e) {}
             } else {
                 handleError(data.message || 'Failed to fetch produce');
             }
@@ -121,7 +139,9 @@ function Home() {
             console.error('Fetch error:', err);
             handleError(`Cannot connect to backend at ${API_URL}. If on mobile, ensure port 8080 is forwarded or on same Wi-Fi.`);
         } finally {
+            clearTimeout(slowTimer);
             setLoading(false);
+            setIsSlowLoading(false);
         }
     }, []);
 
@@ -171,8 +191,14 @@ function Home() {
                     {/* Desktop action buttons */}
                     <div className="desktop-nav-actions">
                         {isLoggedIn && (
+                            <Link to="/orders" className="btn-nav-orders">
+                                🛍️ My Purchases
+                            </Link>
+                        )}
+
+                        {isLoggedIn && (
                             <Link to="/dashboard" className="btn-nav-dashboard">
-                                📊 My Dashboard
+                                📊 Grower Dashboard
                             </Link>
                         )}
 
@@ -185,7 +211,7 @@ function Home() {
                                 userName={loggedInUser}
                                 onLogout={handleLogout}
                                 onOpenAccountDetails={() => setIsAccountModalOpen(true)}
-                                onOpenOrders={() => setIsOrdersModalOpen(true)}
+                                onOpenOrders={() => navigate('/orders')}
                             />
                         ) : (
                             <div className="auth-buttons">
@@ -202,7 +228,7 @@ function Home() {
                                 userName={loggedInUser}
                                 onLogout={handleLogout}
                                 onOpenAccountDetails={() => setIsAccountModalOpen(true)}
-                                onOpenOrders={() => setIsOrdersModalOpen(true)}
+                                onOpenOrders={() => navigate('/orders')}
                             />
                         ) : (
                             <Link to="/login" className="btn-login-link-mobile">Login</Link>
@@ -214,7 +240,7 @@ function Home() {
             {/* Location & Hero Section */}
             <section className="hero-section">
                 <div className="hero-content">
-                    <h1>Garden-Fresh Vegetables From Your Neighbors</h1>
+                    <h1 className="hero-title">Garden-Fresh Vegetables From Your Neighbors</h1>
                     <p className="hero-subtitle">Discover harvest from home gardens within 5–10 km before it perishes.</p>
 
                     {/* Integrated Location Search Bar */}
@@ -274,15 +300,28 @@ function Home() {
                 </div>
 
                 {/* Loading Spinner */}
-                {loading && (
+                {loading && products.length === 0 && (
                     <div className="loading-state">
                         <div className="spinner"></div>
                         <p>Finding fresh produce from nearby neighbors...</p>
+                        {isSlowLoading && (
+                            <p className="slow-loading-hint">
+                                ⚡ Waking up live server... Thanks for your patience on the first load!
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                {/* Subtle updating indicator if background refresh while displaying cached items */}
+                {loading && products.length > 0 && (
+                    <div className="background-refresh-bar">
+                        <span className="refresh-dot"></span>
+                        Checking for latest harvests...
                     </div>
                 )}
 
                 {/* Produce Grid (Optimized 2-Column on Mobile like Blinkit & Zepto) */}
-                {!loading && currentLocation && products.length > 0 && (
+                {currentLocation && products.length > 0 && (
                     <div className="produce-grid">
                         {products.map((item) => {
                             const freshness = getFreshnessBadge(item.expiresAt);
@@ -351,31 +390,51 @@ function Home() {
 
                                         {/* Action: Blinkit / Zepto Style ADD & Quantity Stepper */}
                                         <div className="card-action-row" onClick={(e) => e.stopPropagation()}>
-                                            {itemQtyInCart === 0 ? (
-                                                <button
-                                                    className="btn-add-to-cart"
-                                                    onClick={() => addToCart(item)}
-                                                >
-                                                    + ADD
-                                                </button>
-                                            ) : (
-                                                <div className="card-qty-stepper">
-                                                    <button
-                                                        className="btn-card-step"
-                                                        onClick={() => updateQuantity(item._id, -1)}
-                                                    >
-                                                        -
-                                                    </button>
-                                                    <span className="card-qty-count">{itemQtyInCart}</span>
-                                                    <button
-                                                        className="btn-card-step"
-                                                        onClick={() => updateQuantity(item._id, 1)}
-                                                        disabled={itemQtyInCart >= item.quantity}
-                                                    >
-                                                        +
-                                                    </button>
-                                                </div>
-                                            )}
+                                            {(() => {
+                                                const loggedInEmail = (localStorage.getItem('loggedInEmail') || '').toLowerCase().trim();
+                                                const isOwnItem = Boolean(
+                                                    (loggedInEmail && item.seller?.email?.toLowerCase() === loggedInEmail) ||
+                                                    (loggedInUser && item.seller?.name?.toLowerCase() === loggedInUser.toLowerCase())
+                                                );
+
+                                                if (isOwnItem) {
+                                                    return (
+                                                        <span className="badge-own-listing" title="You listed this produce">
+                                                            🌿 Your Listing
+                                                        </span>
+                                                    );
+                                                }
+
+                                                if (itemQtyInCart === 0) {
+                                                    return (
+                                                        <button
+                                                            className="btn-add-to-cart"
+                                                            onClick={() => addToCart(item)}
+                                                        >
+                                                            + ADD
+                                                        </button>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <div className="card-qty-stepper">
+                                                        <button
+                                                            className="btn-card-step"
+                                                            onClick={() => updateQuantity(item._id, -1)}
+                                                        >
+                                                            -
+                                                        </button>
+                                                        <span className="card-qty-count">{itemQtyInCart}</span>
+                                                        <button
+                                                            className="btn-card-step"
+                                                            onClick={() => updateQuantity(item._id, 1)}
+                                                            disabled={itemQtyInCart >= item.quantity}
+                                                        >
+                                                            +
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                 </div>
@@ -494,7 +553,7 @@ function Home() {
                 isOpen={isAccountModalOpen}
                 onClose={() => setIsAccountModalOpen(false)}
                 userName={loggedInUser}
-                onOpenOrders={() => setIsOrdersModalOpen(true)}
+                onOpenOrders={() => navigate('/orders')}
             />
 
             {/* User Orders Modal */}
