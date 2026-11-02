@@ -782,96 +782,123 @@ def create_deck(output_path, qr_image_path):
                   meta, chip_bg, chip_col)
 
     # =========================================================================
-    # SLIDE 8: Redesigned Modern & Attractive Limitations & Future Roadmap
+    # SLIDE 8: Redesigned Modern 6-Card Limitations & Future Roadmap
     # =========================================================================
     slide8 = prs.slides.add_slide(blank_layout)
     set_slide_background(slide8, COLOR_BG)
-    add_header(slide8, "07 • Limitations & Future Roadmap", "Current Limitations & Planned Features", "A clear, modern overview of MVP boundaries alongside our feature development roadmap.")
+    add_header(slide8, "07 • Limitations & Future Roadmap", "Current Limitations & Planned Enhancements", "A transparent overview of current MVP boundaries alongside our upcoming engineering roadmap.")
     add_footer(slide8, 8)
 
-    card_w2 = Inches(5.72)
-    card_h2 = Inches(2.35)
-    row1_y = Inches(1.65)
-    row2_y = row1_y + card_h2 + Inches(0.22)
+    card_w3 = Inches(3.75)
+    card_h3 = Inches(2.30)
+    gap_x3 = Inches(0.24)
+    gap_y3 = Inches(0.18)
+    row1_y = Inches(1.64)
+    row2_y = row1_y + card_h3 + gap_y3
 
     roadmap_items = [
-        ("💳", "Online Payments Integration",
-         "CURRENT: No in-app payment gateway. Transactions are settled manually in cash or personal UPI upon pickup.",
-         "ROADMAP: Integrated Razorpay / Stripe gateway with automatic escrow release once produce is collected.",
-         "Planned: Razorpay / Stripe Webhook APIs",
-         "PAYMENTS PENDING", COLOR_ROSE_BG, COLOR_ROSE_TEXT),
-        
-        ("📱", "Phone Number OTP Verification",
-         "CURRENT: Basic authentication with email & password. Mobile number OTP verification is not implemented.",
-         "ROADMAP: Seamless 1-tap mobile login with SMS OTP verification for faster, verified onboarding.",
-         "Planned: Firebase Phone Auth / Twilio SMS",
-         "AUTH UPGRADE", COLOR_AMBER_BG, COLOR_AMBER),
+        ("📲", "Android App (APK)",
+         "CURRENT: Responsive web only. Requires browser bookmarking, whereas local users strongly prefer a lightweight installable smartphone app.",
+         "ROADMAP: Standalone Android APK (React Native / Capacitor) with 1-tap launcher access, smooth mobile UX, and offline local caching.",
+         "TECH: React Native / Capacitor Android Bundle",
+         "MOBILE APK", COLOR_AMBER_BG, COLOR_AMBER),
 
-        ("🚚", "Doorstep Delivery Coordination",
-         "CURRENT: Self-pickup only. Platform connects buyer and seller; physical collection is handled mutually.",
-         "ROADMAP: Local neighborhood delivery rider network and volunteer drop-off pooling for convenient delivery.",
-         "Planned: Distance Matrix API & Route Pooling",
-         "DELIVERY PENDING", COLOR_AMBER_BG, COLOR_AMBER),
+        ("🔔", "Order Push Alerts",
+         "CURRENT: Manual web dashboard refresh required to know when an order moves through fulfillment stages.",
+         "ROADMAP: Instant push alerts & SMS at every milestone: 📦 Packed ➔ 🚚 Out for Delivery ➔ ✅ Delivered.",
+         "TECH: Firebase Cloud Messaging (FCM) & SMS Webhooks",
+         "PUSH NOTIFS", COLOR_AMBER_BG, COLOR_AMBER),
 
-        ("⭐", "Seller Ratings & Community Trust",
-         "CURRENT: No public reviews or rating system to evaluate seller produce quality or trustworthiness.",
-         "ROADMAP: 5-star ratings, customer feedback reviews, and 'Verified Organic Home Grower' trust badges.",
-         "Planned: Community Feedback & Verified Badges",
-         "RATINGS PENDING", COLOR_LIGHT_MINT, COLOR_DARK_GREEN)
+        ("🛵", "Veggity Pickup Fleet",
+         "CURRENT: Peer-to-peer self pickup only. Buyer and seller must coordinate physical handover entirely on their own.",
+         "ROADMAP: Veggity-managed neighborhood community drop hubs and dedicated delivery rider pickup pooling for doorstep drops.",
+         "TECH: Veggity Drop Hubs & Distance Pooling API",
+         "OWN FLEET", COLOR_ROSE_BG, COLOR_ROSE_TEXT),
+
+        ("💳", "In-App Online Payments",
+         "CURRENT: Cash on Delivery only. In-app digital payments are unclickable with placeholder notice.",
+         "ROADMAP: Direct UPI Intent, QR code, and Debit/Credit Card gateway with automated escrow release upon verified delivery.",
+         "TECH: Razorpay / Stripe Webhook Integration",
+         "PAYMENTS", COLOR_ROSE_BG, COLOR_ROSE_TEXT),
+
+        ("📱", "1-Tap Phone OTP Login",
+         "CURRENT: Email and password authentication. Slower onboarding for local home gardeners and senior terrace growers.",
+         "ROADMAP: Frictionless mobile number login with 6-digit SMS OTP verification for verified neighbor identity and zero spam.",
+         "TECH: Firebase Phone Auth / Twilio Verify",
+         "OTP LOGIN", COLOR_LIGHT_MINT, COLOR_DARK_GREEN),
+
+        ("⭐", "Seller Ratings & Reviews",
+         "CURRENT: No public grower reputation score, buyer feedback, or quality history shown on produce cards.",
+         "ROADMAP: 5-star rating system, photo feedback, and 'Verified Chemical-Free Home Grower' trust credentials.",
+         "TECH: Community Review Engine & Trust Credentials",
+         "TRUST SCORES", COLOR_LIGHT_MINT, COLOR_DARK_GREEN)
+    ]
+
+    col_x_coords = [
+        Inches(0.8),
+        Inches(0.8) + card_w3 + gap_x3,
+        Inches(0.8) + (card_w3 + gap_x3) * 2
     ]
 
     grid_positions = [
-        (Inches(0.8), row1_y),
-        (Inches(6.81), row1_y),
-        (Inches(0.8), row2_y),
-        (Inches(6.81), row2_y)
+        (col_x_coords[0], row1_y),
+        (col_x_coords[1], row1_y),
+        (col_x_coords[2], row1_y),
+        (col_x_coords[0], row2_y),
+        (col_x_coords[1], row2_y),
+        (col_x_coords[2], row2_y)
     ]
 
     for (icon, title, cur_text, road_text, spec_text, badge_txt, b_bg, b_col), (pos_x, pos_y) in zip(roadmap_items, grid_positions):
-        create_card(slide8, pos_x, pos_y, card_w2, card_h2, COLOR_CARD_BG, COLOR_BORDER)
+        create_card(slide8, pos_x, pos_y, card_w3, card_h3, COLOR_CARD_BG, COLOR_BORDER)
         
-        add_badge(slide8, pos_x + card_w2 - Inches(2.15), pos_y + Inches(0.16), Inches(1.95), Inches(0.28),
+        # Badge on top right
+        add_badge(slide8, pos_x + card_w3 - Inches(1.22), pos_y + Inches(0.12), Inches(1.08), Inches(0.24),
                   badge_txt, b_bg, b_col)
 
-        tb = slide8.shapes.add_textbox(pos_x + Inches(0.25), pos_y + Inches(0.14), card_w2 - Inches(2.45), Inches(0.45))
+        # Title on top left
+        tb = slide8.shapes.add_textbox(pos_x + Inches(0.16), pos_y + Inches(0.10), card_w3 - Inches(1.36), Inches(0.38))
         tf = tb.text_frame
         tf.word_wrap = True
         tf.margin_left = tf.margin_top = tf.margin_right = tf.margin_bottom = 0
         p1 = tf.paragraphs[0]
         p1.text = f"{icon}  {title}"
         p1.font.name = FONT_FAMILY
-        p1.font.size = Pt(13)
+        p1.font.size = Pt(11)
         p1.font.bold = True
         p1.font.color.rgb = COLOR_DARK_GREEN
 
-        tb_body = slide8.shapes.add_textbox(pos_x + Inches(0.25), pos_y + Inches(0.6), card_w2 - Inches(0.5), card_h2 - Inches(0.7))
+        # Body
+        tb_body = slide8.shapes.add_textbox(pos_x + Inches(0.16), pos_y + Inches(0.50), card_w3 - Inches(0.32), card_h3 - Inches(0.56))
         tfb = tb_body.text_frame
         tfb.word_wrap = True
         tfb.margin_left = tfb.margin_top = tfb.margin_right = tfb.margin_bottom = 0
 
         p_cur = tfb.paragraphs[0]
-        p_cur.text = "⚠️  " + cur_text
+        p_cur.text = "⚠️ " + cur_text
         p_cur.font.name = FONT_FAMILY
-        p_cur.font.size = Pt(10)
+        p_cur.font.size = Pt(8.5)
         p_cur.font.color.rgb = COLOR_TEXT_MUTED
-        p_cur.space_after = Pt(4)
+        p_cur.line_spacing = 1.12
+        p_cur.space_after = Pt(3)
 
         p_road = tfb.add_paragraph()
-        p_road.text = "🚀  " + road_text
+        p_road.text = "🚀 " + road_text
         p_road.font.name = FONT_FAMILY
-        p_road.font.size = Pt(10)
+        p_road.font.size = Pt(8.8)
         p_road.font.bold = True
         p_road.font.color.rgb = COLOR_DARK_GREEN
-        p_road.space_after = Pt(4)
+        p_road.line_spacing = 1.12
+        p_road.space_after = Pt(3)
 
         p_spec = tfb.add_paragraph()
-        p_spec.text = "🔧  " + spec_text
+        p_spec.text = "🔧 " + spec_text
         p_spec.font.name = FONT_FAMILY
-        p_spec.font.size = Pt(9.5)
+        p_spec.font.size = Pt(8.0)
         p_spec.font.color.rgb = COLOR_MID_GREEN
 
     # Bottom Highlight Pill Card spanning the bottom
-    bot_bar = slide8.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.8), Inches(6.52), Inches(11.733), Inches(0.38))
+    bot_bar = slide8.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.8), Inches(6.50), Inches(11.733), Inches(0.36))
     bot_bar.fill.solid()
     bot_bar.fill.fore_color.rgb = COLOR_LIGHT_MINT
     bot_bar.line.fill.background()
@@ -879,10 +906,10 @@ def create_deck(output_path, qr_image_path):
     bbtf.word_wrap = False
     bbtf.margin_left = bbtf.margin_top = bbtf.margin_right = bbtf.margin_bottom = 0
     bbp = bbtf.paragraphs[0]
-    bbp.text = "🎯 Summary: Current MVP focuses on core Discovery & Listing • Upcoming Phase adds Payments, OTP, Delivery & Ratings"
+    bbp.text = "🎯 Summary: Core MVP live on Web • Upcoming Roadmap adds Android APK, Push Alerts, Veggity Fleet & Online Payments"
     bbp.alignment = PP_ALIGN.CENTER
     bbp.font.name = FONT_FAMILY
-    bbp.font.size = Pt(10)
+    bbp.font.size = Pt(9.5)
     bbp.font.bold = True
     bbp.font.color.rgb = COLOR_DARK_GREEN
 
