@@ -59,3 +59,9 @@ export const handleError = (msg) => {
         position: 'top-center'
     });
 };
+
+export const handleInfo = (msg) => {
+    toast.info(msg, {
+        position: 'top-center'
+    });
+};

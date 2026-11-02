@@ -56,7 +56,7 @@ input:focus {
   box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
 }
 
-form button {
+.container form button {
   position: static;
   width: 100%;
   padding: 13px;
@@ -73,12 +73,12 @@ form button {
   touch-action: manipulation;
 }
 
-form button:hover,
-form button:active {
+.container form button:hover,
+.container form button:active {
   background-color: #047857;
 }
 
-form span {
+.container form span {
   display: block;
   text-align: center;
   margin-top: 18px;
@@ -86,7 +86,7 @@ form span {
   color: #64748b;
 }
 
-form span a {
+.container form span a {
   margin-left: 5px;
   color: #059669;
   font-weight: 700;

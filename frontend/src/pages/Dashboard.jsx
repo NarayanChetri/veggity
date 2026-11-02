@@ -35,6 +35,8 @@ function Dashboard() {
     const [listings, setListings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [updatingOrderId, setUpdatingOrderId] = useState(null);
+    const [listingFilter, setListingFilter] = useState('active'); // 'active' | 'expired' | 'all'
+    const [reactivatingId, setReactivatingId] = useState(null);
 
     // Profile & Edit modals
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
@@ -181,6 +183,57 @@ function Dashboard() {
         }
     };
 
+    // Check if listing has expired
+    const isExpired = (prod) => {
+        if (!prod || !prod.expiresAt) return false;
+        return new Date(prod.expiresAt) <= new Date();
+    };
+
+    // 1-Click Reactivate an expired produce listing
+    const handleReactivateListing = async (prod) => {
+        try {
+            setReactivatingId(prod._id);
+            const token = localStorage.getItem('token');
+            const renewalDays = prod.shelfLifeDays || 5;
+
+            const res = await fetch(`${API_URL}/orders/my-listings/${prod._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: token
+                },
+                body: JSON.stringify({
+                    shelfLifeDays: renewalDays,
+                    isAvailable: true
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                handleSuccess(`🎉 "${prod.title}" reactivated! Fresh for ${renewalDays} days.`);
+                setListings((prev) =>
+                    prev.map((p) => {
+                        if (p._id === prod._id) {
+                            return data.product || {
+                                ...p,
+                                expiresAt: new Date(Date.now() + renewalDays * 86400000),
+                                isAvailable: true
+                            };
+                        }
+                        return p;
+                    })
+                );
+            } else {
+                handleError(data.message || 'Failed to reactivate listing');
+            }
+        } catch (err) {
+            console.error('Reactivation error:', err);
+            handleError('Could not reactivate listing');
+        } finally {
+            setReactivatingId(null);
+        }
+    };
+
     // Update listing callback from EditListingModal
     const handleListingUpdated = (updatedProduct) => {
         setListings((prev) =>
@@ -209,7 +262,14 @@ function Dashboard() {
         return !s.includes('deliver') && !s.includes('complete') && !s.includes('cancel');
     }).length;
 
-    const activeListingsCount = listings.filter((l) => l.isAvailable).length;
+    // Separate active and expired listings
+    const activeListings = listings.filter((l) => !isExpired(l));
+    const expiredListings = listings.filter((l) => isExpired(l));
+    const displayedListings =
+        listingFilter === 'active' ? activeListings :
+        listingFilter === 'expired' ? expiredListings : listings;
+
+    const activeListingsCount = activeListings.filter((l) => l.isAvailable).length;
 
     return (
         <div className="dashboard-container">
@@ -401,16 +461,16 @@ function Dashboard() {
                                                     <label>Update Order Fulfillment Status:</label>
                                                     <select
                                                         className="status-select"
-                                                        value={ord.status || 'Order Placed'}
+                                                        value={ord.status === 'Moved' ? 'Out for Delivery' : (ord.status || 'Packed')}
                                                         disabled={updatingOrderId === ord._id}
                                                         onChange={(e) => handleStatusChange(ord._id, e.target.value)}
                                                     >
-                                                        <option value="Order Placed">📋 1. Order Placed</option>
-                                                        <option value="Packed">📦 2. Harvested & Packed</option>
-                                                        <option value="Moved">🚚 3. Out for Delivery</option>
-                                                        <option value="Arriving">📍 4. Arriving Soon</option>
-                                                        <option value="Delivered">✅ 5. Delivered & Paid</option>
-                                                        <option value="Cancelled">❌ Cancelled</option>
+                                                        {ord.status === 'Order Placed' && (
+                                                            <option value="Order Placed" disabled>📋 Order Placed (New)</option>
+                                                        )}
+                                                        <option value="Packed">📦 Packed</option>
+                                                        <option value="Out for Delivery">🚚 Out for Delivery</option>
+                                                        <option value="Delivered">✅ Delivered</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -426,7 +486,7 @@ function Dashboard() {
                                 <div className="listings-action-bar">
                                     <div className="action-bar-text">
                                         <h3>Manage Your Surplus Garden Listings</h3>
-                                        <p>Edit descriptions, update quantities, pause stock, or add new homegrown vegetables.</p>
+                                        <p>Edit descriptions, update quantities, renew expired produce, or add fresh harvests.</p>
                                     </div>
                                     <Link to="/add-produce" className="btn-add-new-listing">
                                         + List More Garden Produce
@@ -436,98 +496,217 @@ function Dashboard() {
                                 {listings.length === 0 ? (
                                     <div className="dash-empty-box">
                                         <div className="empty-emoji">🌱</div>
-                                        <h3>No active produce listings yet</h3>
+                                        <h3>No produce listings yet</h3>
                                         <p>You haven't listed any surplus garden produce. List extra vegetables from your terrace or kitchen garden to sell to nearby neighbors!</p>
                                         <Link to="/add-produce" className="btn-primary-action">
                                             + List Your Produce
                                         </Link>
                                     </div>
                                 ) : (
-                                    <div className="listings-grid">
-                                        {listings.map((prod) => (
-                                            <div key={prod._id} className="listing-card">
-                                                {/* Produce Image with Category and Stock Badges */}
-                                                <div className="listing-card-media">
-                                                    <img
-                                                        src={prod.imageUrl || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&auto=format&fit=crop&q=80'}
-                                                        alt={prod.title}
-                                                        className="listing-thumb-img"
-                                                        loading="lazy"
-                                                        onError={(e) => {
-                                                            e.target.src = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&auto=format&fit=crop&q=80';
-                                                        }}
-                                                    />
-                                                    <div className="listing-media-badges">
-                                                        <span className="cat-badge">{prod.category}</span>
-                                                        <span className={`avail-badge ${prod.isAvailable ? 'in-stock' : 'out-stock'}`}>
-                                                            {prod.isAvailable ? '● Active' : '○ Out of stock'}
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                                {/* Title */}
-                                                <h3 className="listing-card-title">{prod.title}</h3>
-
-                                                {/* Description */}
-                                                {prod.description ? (
-                                                    <p className="listing-desc-text">"{prod.description}"</p>
-                                                ) : (
-                                                    <p className="listing-desc-text empty-desc">No description added yet. Click edit to add your garden story!</p>
-                                                )}
-
-                                                {/* Key Produce Metadata */}
-                                                <div className="listing-meta-row">
-                                                    <span>Price:</span>
-                                                    <strong>₹{prod.price} / {prod.unit}</strong>
-                                                </div>
-                                                <div className="listing-meta-row">
-                                                    <span>Stock Remaining:</span>
-                                                    <strong>{prod.quantity} {prod.unit}</strong>
-                                                </div>
-                                                <div className="listing-meta-row">
-                                                    <span>Location:</span>
-                                                    <span>{prod.locationArea}</span>
-                                                </div>
-                                                <div className="listing-meta-row">
-                                                    <span>Fresh Shelf-Life:</span>
-                                                    <span>{prod.shelfLifeDays} Days</span>
-                                                </div>
-                                                {prod.harvestMethod && (
-                                                    <div className="listing-meta-row">
-                                                        <span>Harvest:</span>
-                                                        <span className="harvest-badge">{prod.harvestMethod}</span>
-                                                    </div>
-                                                )}
-
-                                                {/* Manage Listing Controls */}
-                                                <div className="listing-actions-row">
-                                                    <button
-                                                        type="button"
-                                                        className="btn-edit-listing"
-                                                        onClick={() => setEditingProduct(prod)}
-                                                        title="Edit description, price, stock, and photos"
-                                                    >
-                                                        ✏️ Edit
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        className={`btn-toggle-stock ${prod.isAvailable ? 'btn-mark-out' : 'btn-mark-in'}`}
-                                                        onClick={() => handleToggleAvailability(prod._id)}
-                                                    >
-                                                        {prod.isAvailable ? 'Pause' : 'Activate'}
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        className="btn-delete-listing"
-                                                        onClick={() => handleDeleteListing(prod._id)}
-                                                        title="Delete Produce"
-                                                    >
-                                                        🗑️
-                                                    </button>
-                                                </div>
+                                    <>
+                                        {/* Filter Bar: Tabs & Dropdown for Active vs Expired */}
+                                        <div className="listings-filter-bar">
+                                            <div className="listings-filter-pills">
+                                                <button
+                                                    type="button"
+                                                    className={`filter-pill-btn ${listingFilter === 'active' ? 'active' : ''}`}
+                                                    onClick={() => setListingFilter('active')}
+                                                >
+                                                    🌿 Active Listings
+                                                    <span className="filter-badge-count">{activeListings.length}</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={`filter-pill-btn ${listingFilter === 'expired' ? 'active' : ''}`}
+                                                    onClick={() => setListingFilter('expired')}
+                                                >
+                                                    ⏰ Expired Listings
+                                                    <span className="filter-badge-count">{expiredListings.length}</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={`filter-pill-btn ${listingFilter === 'all' ? 'active' : ''}`}
+                                                    onClick={() => setListingFilter('all')}
+                                                >
+                                                    All
+                                                    <span className="filter-badge-count">{listings.length}</span>
+                                                </button>
                                             </div>
-                                        ))}
-                                    </div>
+
+                                            <div className="listings-filter-dropdown-wrap">
+                                                <label htmlFor="listing-filter-dropdown">View:</label>
+                                                <select
+                                                    id="listing-filter-dropdown"
+                                                    className="listings-filter-select"
+                                                    value={listingFilter}
+                                                    onChange={(e) => setListingFilter(e.target.value)}
+                                                >
+                                                    <option value="active">Active Listings ({activeListings.length})</option>
+                                                    <option value="expired">Expired Listings ({expiredListings.length})</option>
+                                                    <option value="all">All Listings ({listings.length})</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {/* Notice banner when on active tab and there are expired listings */}
+                                        {listingFilter === 'active' && expiredListings.length > 0 && (
+                                            <div className="expired-banner-notice">
+                                                <span>
+                                                    ⏰ You have <strong>{expiredListings.length} expired produce listing{expiredListings.length > 1 ? 's' : ''}</strong> hidden from nearby buyers.
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    className="btn-view-expired"
+                                                    onClick={() => setListingFilter('expired')}
+                                                >
+                                                    Review & Reactivate ➔
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {displayedListings.length === 0 ? (
+                                            <div className="dash-empty-box">
+                                                <div className="empty-emoji">
+                                                    {listingFilter === 'expired' ? '🎉' : '🥬'}
+                                                </div>
+                                                <h3>
+                                                    {listingFilter === 'expired'
+                                                        ? 'No expired listings!'
+                                                        : 'No active produce listings'}
+                                                </h3>
+                                                <p>
+                                                    {listingFilter === 'expired'
+                                                        ? 'All your listed vegetables and fruits are currently fresh and within their shelf-life.'
+                                                        : 'You currently have no active listings. Switch to the Expired Listings tab to reactivate them in 1 click, or list new harvests!'}
+                                                </p>
+                                                {listingFilter === 'active' && expiredListings.length > 0 && (
+                                                    <button
+                                                        type="button"
+                                                        className="btn-primary-action"
+                                                        onClick={() => setListingFilter('expired')}
+                                                    >
+                                                        View Expired Listings ({expiredListings.length})
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="listings-grid">
+                                                {displayedListings.map((prod) => {
+                                                    const expired = isExpired(prod);
+                                                    return (
+                                                        <div
+                                                            key={prod._id}
+                                                            className={`listing-card ${expired ? 'is-expired-card' : ''}`}
+                                                        >
+                                                            {/* Produce Image with Category and Stock Badges */}
+                                                            <div className="listing-card-media">
+                                                                <img
+                                                                    src={prod.imageUrl || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&auto=format&fit=crop&q=80'}
+                                                                    alt={prod.title}
+                                                                    className="listing-thumb-img"
+                                                                    loading="lazy"
+                                                                    onError={(e) => {
+                                                                        e.target.src = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&auto=format&fit=crop&q=80';
+                                                                    }}
+                                                                />
+                                                                <div className="listing-media-badges">
+                                                                    <span className="cat-badge">{prod.category}</span>
+                                                                    {expired ? (
+                                                                        <span className="avail-badge expired">⚠️ Expired</span>
+                                                                    ) : (
+                                                                        <span className={`avail-badge ${prod.isAvailable ? 'in-stock' : 'out-stock'}`}>
+                                                                            {prod.isAvailable ? '● Active' : '○ Out of stock'}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Title */}
+                                                            <h3 className="listing-card-title">{prod.title}</h3>
+
+                                                            {/* Description */}
+                                                            {prod.description ? (
+                                                                <p className="listing-desc-text">"{prod.description}"</p>
+                                                            ) : (
+                                                                <p className="listing-desc-text empty-desc">No description added yet. Click edit to add your garden story!</p>
+                                                            )}
+
+                                                            {/* Key Produce Metadata */}
+                                                            <div className="listing-meta-row">
+                                                                <span>Price:</span>
+                                                                <strong>₹{prod.price} / {prod.unit}</strong>
+                                                            </div>
+                                                            <div className="listing-meta-row">
+                                                                <span>Stock Remaining:</span>
+                                                                <strong>{prod.quantity} {prod.unit}</strong>
+                                                            </div>
+                                                            <div className="listing-meta-row">
+                                                                <span>Location:</span>
+                                                                <span>{prod.locationArea}</span>
+                                                            </div>
+                                                            <div className="listing-meta-row">
+                                                                <span>Fresh Shelf-Life:</span>
+                                                                <span>{prod.shelfLifeDays} Days</span>
+                                                            </div>
+                                                            {expired && prod.expiresAt && (
+                                                                <div className="listing-meta-row expired-date-row">
+                                                                    <span>Expired On:</span>
+                                                                    <strong className="expired-date-val">
+                                                                        {new Date(prod.expiresAt).toLocaleDateString()}
+                                                                    </strong>
+                                                                </div>
+                                                            )}
+                                                            {prod.harvestMethod && (
+                                                                <div className="listing-meta-row">
+                                                                    <span>Harvest:</span>
+                                                                    <span className="harvest-badge">{prod.harvestMethod}</span>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Manage Listing Controls */}
+                                                            <div className="listing-actions-row">
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn-edit-listing"
+                                                                    onClick={() => setEditingProduct(prod)}
+                                                                    title="Edit description, price, stock, and photos"
+                                                                >
+                                                                    ✏️ Edit
+                                                                </button>
+                                                                {expired ? (
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn-reactivate-listing"
+                                                                        disabled={reactivatingId === prod._id}
+                                                                        onClick={() => handleReactivateListing(prod)}
+                                                                        title="Reactivate this produce listing for 1 more fresh shelf-life cycle"
+                                                                    >
+                                                                        {reactivatingId === prod._id ? 'Reactivating...' : '⚡ Reactivate'}
+                                                                    </button>
+                                                                ) : (
+                                                                    <button
+                                                                        type="button"
+                                                                        className={`btn-toggle-stock ${prod.isAvailable ? 'btn-mark-out' : 'btn-mark-in'}`}
+                                                                        onClick={() => handleToggleAvailability(prod._id)}
+                                                                    >
+                                                                        {prod.isAvailable ? 'Pause' : 'Activate'}
+                                                                    </button>
+                                                                )}
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn-delete-listing"
+                                                                    onClick={() => handleDeleteListing(prod._id)}
+                                                                    title="Delete Produce"
+                                                                >
+                                                                    🗑️
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         )}

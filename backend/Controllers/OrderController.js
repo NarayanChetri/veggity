@@ -386,6 +386,34 @@ const rateOrder = async (req, res) => {
     }
 };
 
+// 10. REACTIVATE EXPIRED LISTING (Renew expiration date by shelfLifeDays and mark as available)
+const reactivateListing = async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const sellerId = req.user._id;
+
+        const product = await ProductModel.findOne({ _id: productId, seller: sellerId });
+        if (!product) {
+            return res.status(404).json({ success: false, message: 'Produce listing not found or not owned by you' });
+        }
+
+        const days = Math.max(1, Number(product.shelfLifeDays || 5));
+        product.shelfLifeDays = days;
+        product.expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+        product.isAvailable = true;
+        await product.save();
+
+        res.status(200).json({
+            success: true,
+            message: `Produce listing "${product.title}" reactivated for ${days} days!`,
+            product
+        });
+    } catch (err) {
+        console.error('Error in reactivateListing:', err);
+        res.status(500).json({ success: false, message: 'Failed to reactivate listing', error: err.message });
+    }
+};
+
 module.exports = {
     createOrder,
     getSellerOrders,
@@ -395,5 +423,6 @@ module.exports = {
     toggleListingAvailability,
     getBuyerOrders,
     updateSellerListing,
-    rateOrder
+    rateOrder,
+    reactivateListing
 };

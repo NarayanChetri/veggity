@@ -336,21 +336,15 @@
     padding: 12px 14px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.saved-contact-header {
+.saved-contact-top-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 4px;
-}
-
-.saved-contact-left {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    width: 100%;
 }
 
 .saved-tag {
@@ -358,32 +352,44 @@
     color: #ffffff;
     font-size: 10px;
     font-weight: 700;
-    padding: 2px 6px;
+    padding: 3px 8px;
     border-radius: 6px;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
-}
-
-.saved-contact-left strong {
-    font-size: 13px;
-    color: #065f46;
+    letter-spacing: 0.4px;
 }
 
 .btn-edit-saved-address {
+    width: auto !important;
+    max-width: fit-content;
+    flex-shrink: 0;
     background: #ffffff;
     border: 1px solid #a7f3d0;
     color: #047857;
     font-size: 11.5px;
     font-weight: 700;
-    padding: 4px 8px;
+    padding: 4px 10px;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap;
 }
 
 .btn-edit-saved-address:hover {
     background: #ecfdf5;
     border-color: #059669;
+}
+
+.saved-contact-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.saved-contact-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #065f46;
+    margin: 0;
 }
 
 .saved-contact-phone {
@@ -472,6 +478,38 @@
     border-radius: 8px;
     border: 1px solid #e2e8f0;
     touch-action: manipulation;
+    transition: all 0.2s ease;
+}
+
+.payment-option:hover:not(.payment-option-disabled) {
+    border-color: #10b981;
+    background: #f0fdf4;
+}
+
+.payment-option-disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    background: #f1f5f9;
+    border: 1px dashed #cbd5e1;
+    justify-content: space-between;
+    user-select: none;
+}
+
+.payment-disabled-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.payment-disabled-badge {
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748b;
+    background: #e2e8f0;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
 .btn-place-order {

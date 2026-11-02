@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { API_URL, handleError, handleSuccess } from '../utils';
+import { API_URL, handleError, handleSuccess, handleInfo } from '../utils';
 import './CartDrawer.css';
 
 function CartDrawer() {
@@ -263,11 +263,8 @@ function CartDrawer() {
                             {/* Saved Address Summary Mode */}
                             {!isEditingAddress && buyerPhone && buyerAddress ? (
                                 <div className="saved-contact-card">
-                                    <div className="saved-contact-header">
-                                        <div className="saved-contact-left">
-                                            <span className="saved-tag">✓ Saved Address</span>
-                                            <strong>{buyerName}</strong>
-                                        </div>
+                                    <div className="saved-contact-top-row">
+                                        <span className="saved-tag">✓ Saved Address</span>
                                         <button
                                             type="button"
                                             className="btn-edit-saved-address"
@@ -276,8 +273,11 @@ function CartDrawer() {
                                             ✏️ Edit
                                         </button>
                                     </div>
-                                    <p className="saved-contact-phone">📞 {buyerPhone}</p>
-                                    <p className="saved-contact-address">🏠 {buyerAddress}</p>
+                                    <div className="saved-contact-body">
+                                        <strong className="saved-contact-name">👤 {buyerName}</strong>
+                                        <p className="saved-contact-phone">📞 {buyerPhone}</p>
+                                        <p className="saved-contact-address">🏠 {buyerAddress}</p>
+                                    </div>
                                 </div>
                             ) : (
                                 /* Full Editable Fields Mode */
@@ -351,6 +351,23 @@ function CartDrawer() {
                                         />
                                         <span>📱 UPI / Pay on Delivery</span>
                                     </label>
+                                    <div
+                                        className="payment-option payment-option-disabled"
+                                        onClick={() => handleInfo('Online payment is not available right now. Please use Cash on Delivery or UPI.')}
+                                        title="Online payment is not available now"
+                                    >
+                                        <div className="payment-disabled-left">
+                                            <input
+                                                type="radio"
+                                                name="paymentMethod"
+                                                disabled
+                                                checked={false}
+                                                readOnly
+                                            />
+                                            <span>💳 Online Payment</span>
+                                        </div>
+                                        <span className="payment-disabled-badge">Not available now</span>
+                                    </div>
                                 </div>
                             </div>
 

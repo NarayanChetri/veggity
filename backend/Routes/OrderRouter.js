@@ -9,7 +9,8 @@ const {
     toggleListingAvailability,
     getBuyerOrders,
     updateSellerListing,
-    rateOrder
+    rateOrder,
+    reactivateListing
 } = require('../Controllers/OrderController');
 
 // All order actions require user authentication
@@ -20,6 +21,7 @@ router.put('/:orderId/status', ensureAuthenticated, updateOrderStatus);
 router.post('/:orderId/rate', ensureAuthenticated, rateOrder);
 router.get('/my-listings', ensureAuthenticated, getSellerListings);
 router.put('/my-listings/:productId', ensureAuthenticated, updateSellerListing);
+router.patch('/my-listings/:productId/reactivate', ensureAuthenticated, reactivateListing);
 router.delete('/my-listings/:productId', ensureAuthenticated, deleteSellerListing);
 router.patch('/my-listings/:productId/toggle', ensureAuthenticated, toggleListingAvailability);
 
