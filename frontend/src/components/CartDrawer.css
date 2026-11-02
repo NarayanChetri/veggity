@@ -441,7 +441,7 @@
 }
 
 /* Minimum 16px font-size to prevent iOS Safari auto-zoom on focus */
-.checkout-field input,
+.checkout-field input:not([type="radio"]):not([type="checkbox"]),
 .checkout-field textarea {
     padding: 10px 12px;
     font-size: 16px; 
@@ -453,6 +453,16 @@
     width: 100%;
 }
 
+.checkout-field input[type="radio"] {
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: #059669;
+    flex-shrink: 0;
+}
+
 .checkout-field input:focus,
 .checkout-field textarea:focus {
     border-color: #10b981;
@@ -461,22 +471,23 @@
 .payment-options {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin-top: 2px;
+    gap: 8px;
+    margin-top: 4px;
 }
 
 .payment-option {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 12.5px;
+    justify-content: flex-start;
+    gap: 10px;
+    font-size: 13px;
     font-weight: 600;
     color: #334155;
     cursor: pointer;
     background: #f8fafc;
-    padding: 8px 10px;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1.5px solid #e2e8f0;
     touch-action: manipulation;
     transition: all 0.2s ease;
 }
@@ -486,11 +497,18 @@
     background: #f0fdf4;
 }
 
+.payment-option.selected {
+    border-color: #059669;
+    background: #ecfdf5;
+    color: #065f46;
+    font-weight: 700;
+}
+
 .payment-option-disabled {
     opacity: 0.55;
     cursor: not-allowed;
     background: #f1f5f9;
-    border: 1px dashed #cbd5e1;
+    border: 1.5px dashed #cbd5e1;
     justify-content: space-between;
     user-select: none;
 }
@@ -498,7 +516,7 @@
 .payment-disabled-left {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
 }
 
 .payment-disabled-badge {
@@ -506,8 +524,8 @@
     font-weight: 700;
     color: #64748b;
     background: #e2e8f0;
-    padding: 2px 7px;
-    border-radius: 4px;
+    padding: 3px 8px;
+    border-radius: 5px;
     text-transform: uppercase;
     letter-spacing: 0.3px;
 }

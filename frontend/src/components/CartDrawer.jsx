@@ -331,7 +331,7 @@ function CartDrawer() {
                             <div className="checkout-field">
                                 <label>Payment Method</label>
                                 <div className="payment-options">
-                                    <label className="payment-option">
+                                    <label className={`payment-option ${paymentMethod === 'Cash on Delivery' ? 'selected' : ''}`}>
                                         <input
                                             type="radio"
                                             name="paymentMethod"
@@ -339,21 +339,11 @@ function CartDrawer() {
                                             checked={paymentMethod === 'Cash on Delivery'}
                                             onChange={(e) => setPaymentMethod(e.target.value)}
                                         />
-                                        <span>💵 Cash on Delivery</span>
-                                    </label>
-                                    <label className="payment-option">
-                                        <input
-                                            type="radio"
-                                            name="paymentMethod"
-                                            value="UPI on Delivery"
-                                            checked={paymentMethod === 'UPI on Delivery'}
-                                            onChange={(e) => setPaymentMethod(e.target.value)}
-                                        />
-                                        <span>📱 UPI / Pay on Delivery</span>
+                                        <span>💵 Cash on Delivery (COD)</span>
                                     </label>
                                     <div
                                         className="payment-option payment-option-disabled"
-                                        onClick={() => handleInfo('Online payment is not available right now. Please use Cash on Delivery or UPI.')}
+                                        onClick={() => handleInfo('Online payment is not available right now. Please use Cash on Delivery.')}
                                         title="Online payment is not available now"
                                     >
                                         <div className="payment-disabled-left">

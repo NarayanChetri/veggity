@@ -35,6 +35,8 @@ function Dashboard() {
     const [listings, setListings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [updatingOrderId, setUpdatingOrderId] = useState(null);
+    const [orderFilter, setOrderFilter] = useState('pending'); // 'pending' (to fulfill) | 'delivered' | 'all'
+    const [isDeliveredExpanded, setIsDeliveredExpanded] = useState(true);
     const [listingFilter, setListingFilter] = useState('active'); // 'active' | 'expired' | 'all'
     const [reactivatingId, setReactivatingId] = useState(null);
 
@@ -120,7 +122,11 @@ function Dashboard() {
 
             const data = await res.json();
             if (data.success) {
-                handleSuccess(`Order status updated to: ${newStatus}`);
+                if (newStatus === 'Delivered') {
+                    handleSuccess(`Order #${orderId.slice(-6).toUpperCase()} marked Delivered and moved to Delivered Orders! ✅`);
+                } else {
+                    handleSuccess(`Order status updated to: ${newStatus}`);
+                }
                 setOrders((prev) =>
                     prev.map((ord) => (ord._id === orderId ? { ...ord, status: newStatus } : ord))
                 );
@@ -257,10 +263,15 @@ function Dashboard() {
         .filter((ord) => ord.status !== 'Cancelled')
         .reduce((sum, ord) => sum + (ord.totalAmount || 0), 0);
 
-    const pendingOrdersCount = orders.filter((ord) => {
-        const s = (ord.status || '').toLowerCase();
-        return !s.includes('deliver') && !s.includes('complete') && !s.includes('cancel');
-    }).length;
+    // Separate active orders to fulfill from completed/delivered orders
+    const isOrderDelivered = (ord) => {
+        const s = (ord?.status || '').toLowerCase();
+        return s.includes('deliver') || s.includes('complete');
+    };
+
+    const ordersToFulfill = orders.filter((ord) => !isOrderDelivered(ord) && ord.status !== 'Cancelled');
+    const deliveredOrders = orders.filter((ord) => isOrderDelivered(ord));
+    const pendingOrdersCount = ordersToFulfill.length;
 
     // Separate active and expired listings
     const activeListings = listings.filter((l) => !isExpired(l));
@@ -270,6 +281,91 @@ function Dashboard() {
         listingFilter === 'expired' ? expiredListings : listings;
 
     const activeListingsCount = activeListings.filter((l) => l.isAvailable).length;
+
+    // Render an order card (active or delivered)
+    const renderOrderCard = (ord, isDelivered = false) => (
+        <div key={ord._id} className={`order-card ${isDelivered ? 'order-card-delivered' : ''}`}>
+            {/* Header with status */}
+            <div className="order-card-header">
+                <div>
+                    <span className="order-id">Order #{ord._id.slice(-6).toUpperCase()}</span>
+                    <span className="order-time">
+                        📅 {new Date(ord.createdAt).toLocaleDateString()} at{' '}
+                        {new Date(ord.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                </div>
+                <span className={`status-badge-pill status-${(ord.status || '').toLowerCase().replace(/\s+/g, '-')}`}>
+                    ● {ord.status || 'Order Placed'}
+                </span>
+            </div>
+
+            {/* Buyer Information Section */}
+            <div className="buyer-info-box">
+                <h4 className="info-title">👤 Customer Delivery & Contact:</h4>
+                <div className="info-row">
+                    <span>Customer:</span>
+                    <strong>{ord.buyerName}</strong>
+                </div>
+                <div className="info-row">
+                    <span>Phone:</span>
+                    <a href={`tel:${ord.buyerPhone}`} className="phone-link">
+                        📞 {ord.buyerPhone}
+                    </a>
+                </div>
+                <div className="info-row">
+                    <span>Delivery Address:</span>
+                    <span className="address-text">{ord.deliveryAddress}</span>
+                </div>
+                <div className="info-row">
+                    <span>Payment Mode:</span>
+                    <span className="payment-tag">💵 Cash on Delivery (COD)</span>
+                </div>
+            </div>
+
+            {/* Items Table */}
+            <div className="order-items-table">
+                <h4 className="info-title">🥬 Harvest Ordered:</h4>
+                {ord.items.map((it, idx) => (
+                    <div key={idx} className="order-item-row">
+                        <div className="item-with-thumb">
+                            <img
+                                src={it.product?.imageUrl || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=100&auto=format&fit=crop&q=80'}
+                                alt={it.title}
+                                className="order-row-thumb"
+                                onError={(e) => {
+                                    e.target.src = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=100&auto=format&fit=crop&q=80';
+                                }}
+                            />
+                            <span>{it.title} ({it.quantity} {it.unit || 'kg'})</span>
+                        </div>
+                        <strong>₹{it.price * it.quantity}</strong>
+                    </div>
+                ))}
+                <div className="order-total-row">
+                    <span>Total to Collect:</span>
+                    <span className="order-total-amount">₹{ord.totalAmount}</span>
+                </div>
+            </div>
+
+            {/* Status Updater Dropdown */}
+            <div className="status-control-section">
+                <label>{isDelivered ? 'Fulfillment Status:' : 'Update Order Fulfillment Status:'}</label>
+                <select
+                    className={`status-select ${isDelivered ? 'status-select-delivered' : ''}`}
+                    value={ord.status === 'Moved' ? 'Out for Delivery' : (ord.status || 'Packed')}
+                    disabled={updatingOrderId === ord._id}
+                    onChange={(e) => handleStatusChange(ord._id, e.target.value)}
+                >
+                    {ord.status === 'Order Placed' && (
+                        <option value="Order Placed" disabled>📋 Order Placed (New)</option>
+                    )}
+                    <option value="Packed">📦 Packed</option>
+                    <option value="Out for Delivery">🚚 Out for Delivery</option>
+                    <option value="Delivered">✅ Delivered</option>
+                </select>
+            </div>
+        </div>
+    );
 
     return (
         <div className="dashboard-container">
@@ -361,7 +457,7 @@ function Dashboard() {
                         className={`dash-tab-btn ${activeTab === 'orders' ? 'active' : ''}`}
                         onClick={() => setActiveTab('orders')}
                     >
-                        📦 Customer Orders to Fulfill ({orders.length})
+                        📦 Customer Orders to Fulfill ({ordersToFulfill.length})
                     </button>
                     <button
                         className={`dash-tab-btn ${activeTab === 'listings' ? 'active' : ''}`}
@@ -391,91 +487,140 @@ function Dashboard() {
                                         </Link>
                                     </div>
                                 ) : (
-                                    <div className="orders-grid">
-                                        {orders.map((ord) => (
-                                            <div key={ord._id} className="order-card">
-                                                {/* Header with status */}
-                                                <div className="order-card-header">
-                                                    <div>
-                                                        <span className="order-id">Order #{ord._id.slice(-6).toUpperCase()}</span>
-                                                        <span className="order-time">
-                                                            📅 {new Date(ord.createdAt).toLocaleDateString()} at{' '}
-                                                            {new Date(ord.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </span>
-                                                    </div>
-                                                    <span className={`status-badge-pill status-${(ord.status || '').toLowerCase().replace(/\s+/g, '-')}`}>
-                                                        ● {ord.status || 'Order Placed'}
-                                                    </span>
+                                    <>
+                                        {/* Orders Filter Bar: Switch between pending, delivered, or all */}
+                                        <div className="orders-filter-bar">
+                                            <div className="orders-filter-pills">
+                                                <button
+                                                    type="button"
+                                                    className={`filter-pill-btn ${orderFilter === 'pending' ? 'active' : ''}`}
+                                                    onClick={() => setOrderFilter('pending')}
+                                                >
+                                                    ⏳ Orders to Fulfill
+                                                    <span className="filter-badge-count">{ordersToFulfill.length}</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={`filter-pill-btn ${orderFilter === 'delivered' ? 'active' : ''}`}
+                                                    onClick={() => setOrderFilter('delivered')}
+                                                >
+                                                    ✅ Delivered Orders
+                                                    <span className="filter-badge-count">{deliveredOrders.length}</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={`filter-pill-btn ${orderFilter === 'all' ? 'active' : ''}`}
+                                                    onClick={() => setOrderFilter('all')}
+                                                >
+                                                    All Orders
+                                                    <span className="filter-badge-count">{orders.length}</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* VIEW 1: ORDERS TO FULFILL (PENDING ONLY) */}
+                                        {orderFilter === 'pending' && (
+                                            <div className="orders-view-section">
+                                                <div className="orders-section-header">
+                                                    <h3>⏳ Customer Orders to Fulfill ({ordersToFulfill.length})</h3>
+                                                    <p>Active orders that need to be harvested, packed, or delivered.</p>
                                                 </div>
 
-                                                {/* Buyer Information Section */}
-                                                <div className="buyer-info-box">
-                                                    <h4 className="info-title">👤 Customer Delivery & Contact:</h4>
-                                                    <div className="info-row">
-                                                        <span>Customer:</span>
-                                                        <strong>{ord.buyerName}</strong>
-                                                    </div>
-                                                    <div className="info-row">
-                                                        <span>Phone:</span>
-                                                        <a href={`tel:${ord.buyerPhone}`} className="phone-link">
-                                                            📞 {ord.buyerPhone}
-                                                        </a>
-                                                    </div>
-                                                    <div className="info-row">
-                                                        <span>Delivery Address:</span>
-                                                        <span className="address-text">{ord.deliveryAddress}</span>
-                                                    </div>
-                                                    <div className="info-row">
-                                                        <span>Payment Mode:</span>
-                                                        <span className="payment-tag">💵 Cash on Delivery (COD)</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* Items Table */}
-                                                <div className="order-items-table">
-                                                    <h4 className="info-title">🥬 Harvest Ordered:</h4>
-                                                    {ord.items.map((it, idx) => (
-                                                        <div key={idx} className="order-item-row">
-                                                            <div className="item-with-thumb">
-                                                                <img
-                                                                    src={it.product?.imageUrl || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=100&auto=format&fit=crop&q=80'}
-                                                                    alt={it.title}
-                                                                    className="order-row-thumb"
-                                                                    onError={(e) => {
-                                                                        e.target.src = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=100&auto=format&fit=crop&q=80';
-                                                                    }}
-                                                                />
-                                                                <span>{it.title} ({it.quantity} {it.unit || 'kg'})</span>
-                                                            </div>
-                                                            <strong>₹{it.price * it.quantity}</strong>
-                                                        </div>
-                                                    ))}
-                                                    <div className="order-total-row">
-                                                        <span>Total to Collect:</span>
-                                                        <span className="order-total-amount">₹{ord.totalAmount}</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* Status Updater Dropdown */}
-                                                <div className="status-control-section">
-                                                    <label>Update Order Fulfillment Status:</label>
-                                                    <select
-                                                        className="status-select"
-                                                        value={ord.status === 'Moved' ? 'Out for Delivery' : (ord.status || 'Packed')}
-                                                        disabled={updatingOrderId === ord._id}
-                                                        onChange={(e) => handleStatusChange(ord._id, e.target.value)}
-                                                    >
-                                                        {ord.status === 'Order Placed' && (
-                                                            <option value="Order Placed" disabled>📋 Order Placed (New)</option>
+                                                {ordersToFulfill.length === 0 ? (
+                                                    <div className="dash-empty-box">
+                                                        <div className="empty-emoji">🎉</div>
+                                                        <h3>All Caught Up!</h3>
+                                                        <p>You have no pending orders waiting to be packed or delivered right now.</p>
+                                                        {deliveredOrders.length > 0 && (
+                                                            <button
+                                                                type="button"
+                                                                className="btn-primary-action"
+                                                                onClick={() => setOrderFilter('delivered')}
+                                                            >
+                                                                View Delivered Orders ({deliveredOrders.length})
+                                                            </button>
                                                         )}
-                                                        <option value="Packed">📦 Packed</option>
-                                                        <option value="Out for Delivery">🚚 Out for Delivery</option>
-                                                        <option value="Delivered">✅ Delivered</option>
-                                                    </select>
+                                                    </div>
+                                                ) : (
+                                                    <div className="orders-grid">
+                                                        {ordersToFulfill.map((ord) => renderOrderCard(ord, false))}
+                                                    </div>
+                                                )}
+
+                                                {/* Subsection for Delivered Orders below pending orders */}
+                                                {deliveredOrders.length > 0 && (
+                                                    <div className="delivered-orders-subsection">
+                                                        <div
+                                                            className="subsection-header-card"
+                                                            onClick={() => setIsDeliveredExpanded(!isDeliveredExpanded)}
+                                                        >
+                                                            <div className="subsection-left">
+                                                                <span className="delivered-section-icon">✅</span>
+                                                                <div>
+                                                                    <h4>Delivered Orders ({deliveredOrders.length})</h4>
+                                                                    <p>Completed orders successfully harvested and delivered to buyers</p>
+                                                                </div>
+                                                            </div>
+                                                            <button type="button" className="btn-toggle-subsection">
+                                                                {isDeliveredExpanded ? 'Hide Delivered ▲' : `Show Delivered (${deliveredOrders.length}) ▼`}
+                                                            </button>
+                                                        </div>
+
+                                                        {isDeliveredExpanded && (
+                                                            <div className="orders-grid delivered-orders-grid">
+                                                                {deliveredOrders.map((ord) => renderOrderCard(ord, true))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* VIEW 2: DELIVERED ORDERS ONLY */}
+                                        {orderFilter === 'delivered' && (
+                                            <div className="orders-view-section">
+                                                <div className="orders-section-header">
+                                                    <h3>✅ Delivered Orders ({deliveredOrders.length})</h3>
+                                                    <p>Completed orders successfully fulfilled, delivered, and collected.</p>
+                                                </div>
+
+                                                {deliveredOrders.length === 0 ? (
+                                                    <div className="dash-empty-box">
+                                                        <div className="empty-emoji">🌱</div>
+                                                        <h3>No delivered orders yet</h3>
+                                                        <p>When you complete and mark active customer orders as "Delivered", they will appear right here.</p>
+                                                        {ordersToFulfill.length > 0 && (
+                                                            <button
+                                                                type="button"
+                                                                className="btn-primary-action"
+                                                                onClick={() => setOrderFilter('pending')}
+                                                            >
+                                                                View Orders to Fulfill ({ordersToFulfill.length})
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div className="orders-grid delivered-orders-grid">
+                                                        {deliveredOrders.map((ord) => renderOrderCard(ord, true))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* VIEW 3: ALL ORDERS */}
+                                        {orderFilter === 'all' && (
+                                            <div className="orders-view-section">
+                                                <div className="orders-section-header">
+                                                    <h3>📋 All Customer Orders Received ({orders.length})</h3>
+                                                    <p>Complete record of active and completed orders.</p>
+                                                </div>
+
+                                                <div className="orders-grid">
+                                                    {orders.map((ord) => renderOrderCard(ord, isOrderDelivered(ord)))}
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         )}
