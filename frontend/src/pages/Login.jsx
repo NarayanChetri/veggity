@@ -114,6 +114,18 @@ function Login() {
     setConfirmPassword('');
   };
 
+  const parseJsonSafe = async (response, url) => {
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error(
+        response.status === 404
+          ? `Reset endpoint not found on server (${url}). If you just pushed, wait for the backend to finish deploying or restart the local backend server.`
+          : `Server returned an unexpected response (HTTP ${response.status}). Please try again in a moment.`
+      );
+    }
+    return response.json();
+  };
+
   // Step 1: Send Reset OTP
   const handleSendResetOtp = async (e) => {
     if (e) e.preventDefault();
@@ -132,8 +144,9 @@ function Login() {
       const timeoutId = setTimeout(() => controller.abort(), 25000);
 
       let response;
+      const url = `${API_URL}/auth/forgot-password/send-otp`;
       try {
-        response = await fetch(`${API_URL}/auth/forgot-password/send-otp`, {
+        response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email }),
@@ -143,7 +156,7 @@ function Login() {
         clearTimeout(timeoutId);
       }
 
-      const result = await response.json();
+      const result = await parseJsonSafe(response, url);
       if (result.success) {
         handleSuccess(`${result.message || 'Reset code sent!'} Check your inbox & spam folder.`);
         setResetStep(2);
@@ -173,13 +186,14 @@ function Login() {
 
     try {
       setVerifyingOtp(true);
-      const response = await fetch(`${API_URL}/auth/verify-otp`, {
+      const url = `${API_URL}/auth/verify-otp`;
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp })
       });
 
-      const result = await response.json();
+      const result = await parseJsonSafe(response, url);
       if (result.success) {
         handleSuccess('OTP verified! Now set your new password.');
         setResetStep(3);
@@ -205,7 +219,8 @@ function Login() {
 
     try {
       setResetting(true);
-      const response = await fetch(`${API_URL}/auth/forgot-password/reset`, {
+      const url = `${API_URL}/auth/forgot-password/reset`;
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -215,7 +230,7 @@ function Login() {
         })
       });
 
-      const result = await response.json();
+      const result = await parseJsonSafe(response, url);
       if (result.success) {
         handleSuccess(result.message || 'Password reset successfully!');
         setLoginInfo({ email: resetEmail.trim(), password: '' });
