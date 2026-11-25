@@ -8,18 +8,27 @@
  *   to any recipient email, for free, with no custom domain required.
  */
 
-const sendOtpMail = async (email, otp) => {
+const sendOtpMail = async (email, otp, purpose = 'signup') => {
     const webhookUrl = process.env.EMAIL_WEBHOOK_URL;
     const webhookSecret = process.env.EMAIL_WEBHOOK_SECRET || '';
+    const isReset = purpose === 'reset';
 
     // Dev fallback: if no webhook URL is set, log the OTP to the console
     if (!webhookUrl) {
         console.warn('\n==================================================');
         console.warn('⚠️  [EMAIL] EMAIL_WEBHOOK_URL not set in .env');
-        console.warn(`📩  Simulated OTP for ${email}: [ ${otp} ] (Valid for 5 min)`);
+        console.warn(`📩  Simulated ${isReset ? 'Password Reset' : 'Signup'} OTP for ${email}: [ ${otp} ] (Valid for 5 min)`);
         console.warn('==================================================\n');
         return { simulated: true, otp };
     }
+
+    const heading = isReset ? 'Reset Your Password' : 'Verify Your Email Address';
+    const bodyCopy = isReset
+        ? 'We received a request to reset your Veggity account password. Use the verification code below to set a new password.'
+        : 'Thank you for joining Veggity. Use the code below to verify your email.';
+    const subject = isReset
+        ? `${otp} is your Veggity password reset code`
+        : `${otp} is your Veggity verification code`;
 
     const htmlBody = `
         <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
@@ -28,9 +37,9 @@ const sendOtpMail = async (email, otp) => {
                 <p style="color: #64748b; margin-top: 4px; font-size: 14px;">Hyperlocal Fresh Homegrown Produce</p>
             </div>
 
-            <h2 style="color: #0f172a; font-size: 18px; margin-bottom: 8px;">Verify Your Email Address</h2>
+            <h2 style="color: #0f172a; font-size: 18px; margin-bottom: 8px;">${heading}</h2>
             <p style="color: #334155; font-size: 15px; line-height: 1.5;">
-                Thank you for joining Veggity. Use the code below to verify your email.
+                ${bodyCopy}
             </p>
 
             <div style="margin: 28px 0; text-align: center;">
@@ -60,7 +69,7 @@ const sendOtpMail = async (email, otp) => {
         body: JSON.stringify({
             secret: webhookSecret,
             to: email,
-            subject: `${otp} is your Veggity verification code`,
+            subject,
             htmlBody
         })
     });

@@ -7,6 +7,12 @@ import ProductDetailsModal from '../components/ProductDetailsModal';
 import UserProfileMenu from '../components/UserProfileMenu';
 import AccountDetailsModal from '../components/AccountDetailsModal';
 import MyOrdersModal from '../components/MyOrdersModal';
+import {
+    EmptyHarvestIllustration,
+    StepHarvestIcon,
+    StepNeighborIcon,
+    StepBasketIcon
+} from '../components/VeggityIllustrations';
 import { useCart } from '../context/CartContext';
 import { ToastContainer } from 'react-toastify';
 import './Home.css';
@@ -445,24 +451,85 @@ function Home() {
 
                 {/* Empty State when no produce found */}
                 {!loading && currentLocation && products.length === 0 && (
-                    <div className="empty-state">
-                        <div className="empty-icon">🥦</div>
-                        <h3>No produce found within {radiusKm} km</h3>
-                        <p>
-                            None of your neighbors have listed vegetables in this category yet.
-                            Try expanding your search radius or list extra produce from your own garden!
-                        </p>
-                        <div className="empty-actions">
-                            {radiusKm < 20 && (
-                                <button className="btn-expand-radius" onClick={() => setRadiusKm(radiusKm === 5 ? 10 : 20)}>
-                                    Expand to {radiusKm === 5 ? '10 km' : '20 km'}
-                                </button>
-                            )}
-                            <Link to="/add-produce" className="btn-list-produce">
-                                + List Your Produce
+                    <section className="empty-harvest-showcase" aria-label="No produce listed nearby">
+                        <div className="empty-hero-card">
+                            <div className="empty-illustration-wrap">
+                                <EmptyHarvestIllustration className="empty-harvest-svg" />
+                            </div>
+                            <div className="empty-hero-copy">
+                                <span className="empty-status-pill">
+                                    Freshness Radar · {radiusKm} km around {currentLocation.name}
+                                </span>
+                                <h3>Your neighborhood garden basket is waiting</h3>
+                                <p>
+                                    {selectedCategory !== 'all'
+                                        ? `No neighbors have listed "${selectedCategory}" within ${radiusKm} km yet. Try viewing all categories, expanding your radius, or sharing surplus from your own garden!`
+                                        : `No neighbors have listed fresh produce within ${radiusKm} km yet. Expand your search radius or be the first grower in ${currentLocation.name} to share today's harvest!`}
+                                </p>
+                                <div className="empty-actions">
+                                    {selectedCategory !== 'all' && (
+                                        <button
+                                            type="button"
+                                            className="btn-reset-category"
+                                            onClick={() => setSelectedCategory('all')}
+                                        >
+                                            Show All Categories
+                                        </button>
+                                    )}
+                                    {radiusKm < 20 && (
+                                        <button
+                                            type="button"
+                                            className="btn-expand-radius"
+                                            onClick={() => setRadiusKm(radiusKm === 5 ? 10 : 20)}
+                                        >
+                                            Expand to {radiusKm === 5 ? '10 km' : '20 km'}
+                                        </button>
+                                    )}
+                                    <Link to="/add-produce" className="btn-list-produce">
+                                        + List Your Produce
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3-Step How Neighborhood Harvest Works */}
+                        <div className="harvest-steps-grid">
+                            <article className="harvest-step-card">
+                                <div className="step-icon-badge">
+                                    <StepHarvestIcon />
+                                </div>
+                                <h4>Picked This Morning</h4>
+                                <p>Neighbors list extra tomatoes, greens, herbs, and roots straight from backyard &amp; terrace gardens.</p>
+                            </article>
+
+                            <article className="harvest-step-card">
+                                <div className="step-icon-badge">
+                                    <StepNeighborIcon />
+                                </div>
+                                <h4>Hyperlocal &amp; Zero-Mile</h4>
+                                <p>Discover chemical-free produce within 5–20 km of your pin before it wilts or goes to waste.</p>
+                            </article>
+
+                            <article className="harvest-step-card">
+                                <div className="step-icon-badge">
+                                    <StepBasketIcon />
+                                </div>
+                                <h4>Reserve &amp; Pick Up</h4>
+                                <p>Add to cart in seconds, support local home growers, and bring home crisp seasonal food.</p>
+                            </article>
+                        </div>
+
+                        {/* Deep Green Grower Callout */}
+                        <div className="grower-callout-banner">
+                            <div className="grower-callout-text">
+                                <h4>Growing extra veggies in {currentLocation.name}?</h4>
+                                <p>Turn garden surplus into neighborhood goodness—list your first harvest in under a minute.</p>
+                            </div>
+                            <Link to="/add-produce" className="btn-grower-cta">
+                                Start Selling Fresh →
                             </Link>
                         </div>
-                    </div>
+                    </section>
                 )}
             </main>
 

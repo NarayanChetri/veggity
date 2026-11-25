@@ -211,9 +211,89 @@ const getProfile = async (req, res) => {
     }
 };
 
+const sendResetOtp = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Email is required' });
+        }
+
+        const normalizedEmail = email.toLowerCase().trim();
+        const existingUser = await UserModel.findOne({ email: normalizedEmail });
+        if (!existingUser) {
+            return res.status(404).json({
+                success: false,
+                message: 'No account found with this email address.'
+            });
+        }
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        await OtpModel.deleteMany({ email: normalizedEmail });
+        await OtpModel.create({ email: normalizedEmail, otp });
+
+        await sendOtpMail(normalizedEmail, otp, 'reset');
+
+        return res.status(200).json({
+            success: true,
+            message: `Password reset code sent to ${normalizedEmail}`
+        });
+    } catch (err) {
+        console.error('sendResetOtp error:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to send reset OTP. Please try again later.'
+        });
+    }
+};
+
+const resetPassword = async (req, res) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+        const normalizedEmail = email.toLowerCase().trim();
+        const trimmedOtp = otp.toString().trim();
+
+        const validOtp = await OtpModel.findOne({
+            email: normalizedEmail,
+            otp: trimmedOtp
+        });
+
+        if (!validOtp) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid or expired OTP. Please request a new code.'
+            });
+        }
+
+        const user = await UserModel.findOne({ email: normalizedEmail });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'No account found with this email address.'
+            });
+        }
+
+        user.password = await bcrypt.hash(newPassword, 10);
+        await user.save();
+        await OtpModel.deleteMany({ email: normalizedEmail });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Password reset successfully! You can now log in.'
+        });
+    } catch (err) {
+        console.error('resetPassword error:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to reset password. Please try again.'
+        });
+    }
+};
+
 module.exports = {
     sendOtp,
     verifyOtp,
+    sendResetOtp,
+    resetPassword,
     signup,
     login,
     getProfile
