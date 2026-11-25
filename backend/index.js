@@ -3,7 +3,8 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const express = require('express');
 const app = express();
-const bodyParser = require('body-parser');
+// body-parser is bundled in express 5; use express.json() directly
+// const bodyParser = require('body-parser');
 const cors = require('cors');
 
 require('./Models/db');
@@ -15,7 +16,8 @@ const OrderRouter = require('./Routes/OrderRouter');
 const PORT = process.env.PORT || 8080;
 
 // Middlewares
-app.use(bodyParser.json());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
 // Health check ping

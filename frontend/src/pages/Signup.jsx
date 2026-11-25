@@ -56,24 +56,37 @@ function Signup() {
 
     try {
       setSendingOtp(true);
-      const response = await fetch(`${API_URL}/auth/send-otp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email })
-      });
+
+      // 25s timeout — Render free tier cold-starts can take ~30s
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+      let response;
+      try {
+        response = await fetch(`${API_URL}/auth/send-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+          signal: controller.signal
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       const result = await response.json();
       if (result.success) {
         handleSuccess(result.message || 'OTP sent to your email!');
         setOtpSent(true);
-        setResendTimer(60); // 60s cooldown
+        setResendTimer(60); // 60s cooldown before resend
       } else {
         handleError(result.message || 'Failed to send OTP');
       }
     } catch (err) {
-      handleError(err.message || 'Unable to connect to server');
+      if (err.name === 'AbortError') {
+        handleError('Server is waking up (free hosting). Please wait a moment and try again.');
+      } else {
+        handleError(err.message || 'Unable to connect to server');
+      }
     } finally {
       setSendingOtp(false);
     }
