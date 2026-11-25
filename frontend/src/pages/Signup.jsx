@@ -75,7 +75,7 @@ function Signup() {
 
       const result = await response.json();
       if (result.success) {
-        handleSuccess(result.message || 'OTP sent to your email!');
+        handleSuccess(`${result.message || 'Email sent!'} Please check your inbox and spam folder.`);
         setOtpSent(true);
         setResendTimer(60); // 60s cooldown before resend
       } else {
@@ -234,7 +234,7 @@ function Signup() {
             </div>
           ) : otpSent ? (
             <div className='otp-help-text'>
-              <span>OTP sent to your email inbox.</span>
+              <span>Email sent! Check your inbox and spam folder.</span>
               {resendTimer > 0 && <span>Resend available in {resendTimer}s</span>}
             </div>
           ) : null}
